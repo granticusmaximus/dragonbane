@@ -1,5 +1,6 @@
 using DndCompanion.Host.Components;
 using DndCompanion.Infrastructure;
+using DndCompanion.Infrastructure.Dev;
 using DndCompanion.Infrastructure.Persistence;
 using DndCompanion.Infrastructure.Srd;
 using DndCompanion.UI.Components;
@@ -36,6 +37,10 @@ await using (var scope = app.Services.CreateAsyncScope())
 
     var importer = scope.ServiceProvider.GetRequiredService<SrdImporter>();
     await importer.ImportAsync(Path.Combine(AppContext.BaseDirectory, "data"));
+
+    // Dev-only fixture data — never runs outside Development, never ships in a packaged build.
+    if (app.Environment.IsDevelopment())
+        await DevSeed.BaloneySlimAsync(db);
 }
 
 // Start Kestrel before creating the Electron window — CreateWindowAsync triggers an
