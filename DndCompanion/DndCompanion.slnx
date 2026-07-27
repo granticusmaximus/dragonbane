@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DndCompanion.Application/DndCompanion.Application.csproj" />
+    <Project Path="src/DndCompanion.Domain/DndCompanion.Domain.csproj" />
+    <Project Path="src/DndCompanion.Host/DndCompanion.Host.csproj" />
+    <Project Path="src/DndCompanion.Infrastructure/DndCompanion.Infrastructure.csproj" />
+    <Project Path="src/DndCompanion.UI/DndCompanion.UI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DndCompanion.Tests/DndCompanion.Tests.csproj" />
+  </Folder>
+</Solution>

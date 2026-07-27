@@ -1,0 +1,57 @@
+@using DndCompanion.Application.Abstractions
+@using DndCompanion.Application.Dice
+@using DndCompanion.Domain.ValueObjects
+@inject IDiceRoller Roller
+
+@*
+  Minimal Blazor port that proves the C#-driven pattern: a spell/action button
+  passes its dice expression here and the roller returns a DiceResult you can render
+  AND persist as an ActionEntry. The rich SVG visuals from the standalone HTML
+  companion drop into the markup below.
+*@
+
+<div class="dice-roller">
+    @if (_result is not null)
+    {
+        <div class="tray">
+            <div class="label">@_result.Label</div>
+            <div class="dice">
+                @foreach (var d in _result.Dice)
+                {
+                    <span class="die d@(d.Sides) @(HighlightClass(d))">@d.Value</span>
+                }
+            </div>
+            <div class="total">@_result.Total</div>
+            @if (_result.IsNat20) { <div class="crit">NAT 20</div> }
+            else if (_result.IsNat1) { <div class="fumble">NAT 1</div> }
+        </div>
+    }
+    <div class="quick">
+        <button @onclick="@(() => RollExpr("2d8+2", "Cure Wounds"))">Cure Wounds</button>
+        <button @onclick="@(() => RollExpr("2d4+2", "Healing Word"))">Healing Word</button>
+        <button @onclick="@(() => RollExpr("1d10", "Fire Bolt"))">Fire Bolt</button>
+        <button @onclick="@(() => RollAttack(4, "Spell Attack"))">Spell Attack +4</button>
+    </div>
+</div>
+
+@code {
+    private DiceResult? _result;
+
+    /// <summary>Fired after every roll so the parent can log an ActionEntry.</summary>
+    [Parameter] public EventCallback<DiceResult> OnRolled { get; set; }
+
+    private async Task RollExpr(string expr, string label)
+    {
+        _result = Roller.Roll(DiceExpression.Parse(expr), label);
+        await OnRolled.InvokeAsync(_result);
+    }
+
+    private async Task RollAttack(int mod, string label)
+    {
+        _result = Roller.RollD20(mod, RollMode.Normal, label);
+        await OnRolled.InvokeAsync(_result);
+    }
+
+    private static string HighlightClass(Die d) =>
+        d is { Sides: 20, Value: 20 } ? "glow" : d is { Sides: 20, Value: 1 } ? "fumble" : "";
+}
