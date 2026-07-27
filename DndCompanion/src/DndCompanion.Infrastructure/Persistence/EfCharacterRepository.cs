@@ -25,6 +25,6 @@ public sealed class EfCharacterRepository(AppDbContext db) : ICharacterRepositor
             .Include(c => c.Items).ThenInclude(ci => ci.Item).ThenInclude(i => i.Source)
             .Include(c => c.Spells).ThenInclude(cs => cs.Spell).ThenInclude(s => s.Source)
             .Include(c => c.Actions).ThenInclude(ca => ca.ActionDef).ThenInclude(a => a.Source)
-            .Include(c => c.Campaigns).ThenInclude(cc => cc.Campaign)
+            .Include(c => c.Campaigns).ThenInclude(cc => cc.Campaign).ThenInclude(camp => camp.Sessions)
             .FirstOrDefaultAsync(c => c.Id == id, ct);
 }

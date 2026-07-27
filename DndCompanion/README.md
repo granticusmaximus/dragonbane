@@ -5,8 +5,9 @@ manage campaigns and characters, run the at-the-table loop (actions, equipment,
 spells, dice, action log), and — later — AI-assisted audio note-taking.
 
 Stack: **.NET 10 · ASP.NET Core + Blazor · SQLite/EF Core · Electron.NET**, in
-**Clean Architecture**. Phase 1 (reference + shell) is scaffolded, builds, and
-runs — see [CLAUDE.md](CLAUDE.md) for the detailed current state and roadmap.
+**Clean Architecture**. Phases 1–3 (reference/shell, campaigns/characters, play view
++ dice) are built and running — see [CLAUDE.md](CLAUDE.md) for the detailed current
+state and roadmap.
 
 ## Layout
 ```
@@ -97,6 +98,19 @@ re-running is a no-op. If you edit the seed data after that character already
 exists in your DB, the change won't retroactively apply — delete the character
 (via the UI, or the db file) first.
 
+## Campaigns, characters & play
+`/campaigns` and `/characters` are full CRUD (list, create, edit, delete), including
+a homebrew quick-add path for spells/items/actions not in the SRD data (tagged
+`ContentKind.Homebrew`). A campaign's detail page also logs sessions (optional
+title, date, notes recap).
+
+Each character sheet has a **Play** button (`/characters/{id}/play`): pick which
+session you're logging to, roll ability checks/saves with the character's real
+modifiers (+ optional proficiency, advantage/disadvantage), roll equipped-weapon
+damage dice, and log any roll — or a free-text note — to that session's
+`ActionEntry` log. Weapon rolls are base damage dice only; there's no structured
+attack-bonus field on items yet, so to-hit math isn't modeled.
+
 ## EF Core migrations
 The `Initial` migration + local SQLite DB (`dndcompanion.db`, next to the built
 Host) are already created. To add a new migration after changing entities:
@@ -106,10 +120,10 @@ dotnet ef database update       -p src/DndCompanion.Infrastructure -s src/DndCom
 ```
 
 ## Build order (see the full plan doc)
-1. **Reference + shell** — SRD import, browse rules/spells/items  ← start here
-2. **Campaigns & characters** — CRUD, character sheet, homebrew entry (Aasimar)
-3. **Play view + dice** — actions/equipment/spells + dice roller + action log
-4. **Audio: transcript** — NAudio → Whisper.net → live transcript
+1. ~~**Reference + shell** — SRD import, browse rules/spells/items~~ done
+2. ~~**Campaigns & characters** — CRUD, character sheet, homebrew entry (Aasimar)~~ done
+3. ~~**Play view + dice** — actions/equipment/spells + dice roller + action log~~ done
+4. **Audio: transcript** — NAudio → Whisper.net → live transcript  ← next
 5. **Audio: structuring** — Ollama drafts notes you confirm
 
 ## Two things baked into the design

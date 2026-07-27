@@ -1,5 +1,6 @@
 using DndCompanion.Domain;
 using DndCompanion.Domain.Entities;
+using DndCompanion.Domain.ValueObjects;
 using DndCompanion.Infrastructure.Persistence;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -136,5 +137,50 @@ public class RepositoryTests : IDisposable
         await repo.SaveChangesAsync();
 
         Assert.Empty(await repo.ListAsync());
+    }
+
+    [Fact]
+    public async Task ActionEntries_are_queryable_by_session_and_round_trip_dice_results()
+    {
+        var campaignRepo = new EfCampaignRepository(_db);
+        var characterRepo = new EfCharacterRepository(_db);
+        var sessionRepo = new EfRepository<SessionLog>(_db);
+        var entryRepo = new EfRepository<ActionEntry>(_db);
+
+        var campaign = new Campaign { Name = "Beyond the Blue Door" };
+        await campaignRepo.AddAsync(campaign);
+        var character = new Character { Name = "Baloney Slim", Species = "Aasimar", Class = "Druid" };
+        await characterRepo.AddAsync(character);
+        await campaignRepo.SaveChangesAsync();
+
+        var session = new SessionLog { CampaignId = campaign.Id, Title = "Session Zero", SessionDate = DateTime.Today };
+        await sessionRepo.AddAsync(session);
+        await sessionRepo.SaveChangesAsync();
+
+        var dice = new DiceResult("WIS check (proficient)", [new Die(20, 15)], 4);
+        await entryRepo.AddAsync(new ActionEntry
+        {
+            SessionLogId = session.Id,
+            CharacterId = character.Id,
+            Description = dice.Label,
+            DiceResultJson = System.Text.Json.JsonSerializer.Serialize(dice),
+            Source = EntrySource.Dice
+        });
+        await entryRepo.AddAsync(new ActionEntry
+        {
+            SessionLogId = session.Id,
+            CharacterId = character.Id,
+            Description = "Searched the pedestal for a hidden compartment.",
+            Source = EntrySource.Manual
+        });
+        await entryRepo.SaveChangesAsync();
+
+        var entries = (await entryRepo.ListAsync()).Where(e => e.SessionLogId == session.Id).ToList();
+
+        Assert.Equal(2, entries.Count);
+        var diceEntry = Assert.Single(entries, e => e.Source == EntrySource.Dice);
+        var roundTripped = System.Text.Json.JsonSerializer.Deserialize<DiceResult>(diceEntry.DiceResultJson!);
+        Assert.Equal(19, roundTripped!.Total);
+        Assert.Contains(entries, e => e.Source == EntrySource.Manual);
     }
 }

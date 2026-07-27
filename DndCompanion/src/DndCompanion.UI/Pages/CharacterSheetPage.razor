@@ -23,15 +23,18 @@
 }
 else
 {
-    <div class="main__header">
-        <h1 class="main__title">@_character.Name</h1>
-        <p class="main__subtitle">
-            @_character.Species &middot; @_character.Class@(string.IsNullOrWhiteSpace(_character.Subclass) ? "" : $" ({_character.Subclass})") &middot; Level @_character.Level
-            @if (_character.Campaigns.Count > 0)
-            {
-                @: &middot; @string.Join(", ", _character.Campaigns.Select(cc => cc.Campaign.Name))
-            }
-        </p>
+    <div class="main__header" style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;">
+        <div>
+            <h1 class="main__title">@_character.Name</h1>
+            <p class="main__subtitle">
+                @_character.Species &middot; @_character.Class@(string.IsNullOrWhiteSpace(_character.Subclass) ? "" : $" ({_character.Subclass})") &middot; Level @_character.Level
+                @if (_character.Campaigns.Count > 0)
+                {
+                    @: &middot; @string.Join(", ", _character.Campaigns.Select(cc => cc.Campaign.Name))
+                }
+            </p>
+        </div>
+        <a class="btn btn-primary" href="/characters/@Id/play">Play</a>
     </div>
 
     <div class="section-card">

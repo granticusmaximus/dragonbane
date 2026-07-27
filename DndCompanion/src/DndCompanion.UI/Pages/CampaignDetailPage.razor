@@ -112,6 +112,10 @@ else
             <div class="form-panel">
                 <div class="form-grid">
                     <div class="form-field">
+                        <label>Title (optional)</label>
+                        <input value="@_newSessionTitle" @oninput="e => _newSessionTitle = e.Value?.ToString() ?? string.Empty" placeholder="e.g. Session Zero" />
+                    </div>
+                    <div class="form-field">
                         <label>Date</label>
                         <input type="date" @bind="_newSessionDate" />
                     </div>
@@ -136,7 +140,13 @@ else
             @foreach (var session in _campaign.Sessions.OrderBy(s => s.SessionDate))
             {
                 <div class="session-card">
-                    <div class="session-card__date">@session.SessionDate.ToString("MMMM d, yyyy")</div>
+                    <div class="session-card__date">
+                        @if (!string.IsNullOrWhiteSpace(session.Title))
+                        {
+                            @session.Title<text> &middot; </text>
+                        }
+                        @session.SessionDate.ToString("MMMM d, yyyy")
+                    </div>
                     @if (!string.IsNullOrWhiteSpace(session.Notes))
                     {
                         <div class="session-card__notes">@session.Notes</div>
@@ -156,6 +166,7 @@ else
     private bool _editing;
 
     private bool _showSessionForm;
+    private string _newSessionTitle = "";
     private DateTime _newSessionDate = DateTime.Today;
     private string _newSessionNotes = "";
 
@@ -216,10 +227,12 @@ else
         {
             CampaignId = _campaign.Id,
             SessionDate = _newSessionDate,
+            Title = string.IsNullOrWhiteSpace(_newSessionTitle) ? null : _newSessionTitle.Trim(),
             Notes = _newSessionNotes.Trim()
         });
         await SessionLogRepository.SaveChangesAsync();
 
+        _newSessionTitle = "";
         _newSessionDate = DateTime.Today;
         _newSessionNotes = "";
         _showSessionForm = false;

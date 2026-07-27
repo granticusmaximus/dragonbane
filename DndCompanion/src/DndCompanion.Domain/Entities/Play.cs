@@ -6,6 +6,7 @@ public class SessionLog
     public Guid CampaignId { get; set; }
     public Campaign Campaign { get; set; } = null!;
     public DateTime SessionDate { get; set; } = DateTime.UtcNow;
+    public string? Title { get; set; }
     public string? Notes { get; set; }
 
     public List<ActionEntry> Entries { get; set; } = [];

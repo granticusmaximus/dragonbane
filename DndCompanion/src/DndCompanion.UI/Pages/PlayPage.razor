@@ -1,0 +1,331 @@
+@page "/characters/{Id:guid}/play"
+@using System.Text.Json
+@using DndCompanion.Application.Abstractions
+@using DndCompanion.Application.Dice
+@using DndCompanion.Domain
+@using DndCompanion.Domain.Entities
+@using DndCompanion.Domain.ValueObjects
+@inject ICharacterRepository CharacterRepository
+@inject IDiceRoller DiceRoller
+@inject IRepository<ActionEntry> ActionEntryRepository
+@inject NavigationManager Nav
+
+<PageTitle>Play — @(_character?.Name ?? "Character")</PageTitle>
+
+<a class="back-link" href="/characters/@Id">&larr; Back to @(_character?.Name ?? "character sheet")</a>
+
+@if (_character is null)
+{
+    <div class="empty-state">Character not found.</div>
+}
+else
+{
+    <div class="main__header">
+        <h1 class="main__title">@_character.Name</h1>
+        <p class="main__subtitle">
+            @_character.Species &middot; @_character.Class &middot; Level @_character.Level
+        </p>
+    </div>
+
+    <div class="toolbar">
+        <select class="filter-select" value="@_selectedSessionId" @onchange="OnSessionChanged">
+            @if (_sessions.Count == 0)
+            {
+                <option value="">No sessions yet</option>
+            }
+            else
+            {
+                @foreach (var s in _sessions)
+                {
+                    <option value="@s.Id">@SessionLabel(s)</option>
+                }
+            }
+        </select>
+    </div>
+
+    <div class="browse-layout">
+        <div class="list-panel">
+            <div class="section-card">
+                <div class="section-card__header">
+                    <div class="section-card__title">Roll a Check or Save</div>
+                </div>
+                <div class="toolbar">
+                    <button class="filter-chip @(_rollMode == RollMode.Disadvantage ? "active" : "")" @onclick="() => _rollMode = RollMode.Disadvantage">Disadvantage</button>
+                    <button class="filter-chip @(_rollMode == RollMode.Normal ? "active" : "")" @onclick="() => _rollMode = RollMode.Normal">Normal</button>
+                    <button class="filter-chip @(_rollMode == RollMode.Advantage ? "active" : "")" @onclick="() => _rollMode = RollMode.Advantage">Advantage</button>
+                    <label class="form-field form-field--checkbox" style="margin-left: auto;">
+                        <input type="checkbox" @bind="_addProficiency" />
+                        <span>Add proficiency (+@_character.ProficiencyBonus)</span>
+                    </label>
+                </div>
+                <div class="toolbar">
+                    @foreach (var a in AbilityRows())
+                    {
+                        <button class="btn" @onclick="() => RollAbilityCheck(a.Label, a.Mod)">@a.Label @FormatMod(a.Mod)</button>
+                    }
+                </div>
+            </div>
+
+            @if (_weapons.Count > 0)
+            {
+                <div class="section-card">
+                    <div class="section-card__header">
+                        <div class="section-card__title">Weapons</div>
+                    </div>
+                    <p class="main__subtitle">Base weapon dice only — add your ability modifier and proficiency yourself; attack-bonus math isn't modeled yet.</p>
+                    <div class="toolbar">
+                        @foreach (var (item, dice) in _weapons)
+                        {
+                            <button class="btn" @onclick="() => RollWeaponDamage(item, dice)">@item.Name (@dice)</button>
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (_lastResult is not null)
+            {
+                <div class="section-card dice-roller">
+                    <div class="tray">
+                        <div class="label">@_lastResult.Label</div>
+                        <div class="dice">
+                            @foreach (var d in _lastResult.Dice)
+                            {
+                                <span class="die d@(d.Sides) @HighlightClass(d)">@d.Value</span>
+                            }
+                        </div>
+                        <div class="total">@_lastResult.Total</div>
+                        @if (_lastResult.IsNat20) { <div class="crit">NAT 20</div> }
+                        else if (_lastResult.IsNat1) { <div class="fumble">NAT 1</div> }
+                    </div>
+                    <button class="btn btn-primary" @onclick="LogLastResult" disabled="@string.IsNullOrEmpty(_selectedSessionId)">Log to session</button>
+                </div>
+            }
+
+            <div class="section-card">
+                <div class="section-card__header">
+                    <div class="section-card__title">Prepared Spells</div>
+                </div>
+                @if (_preparedSpells.Count == 0)
+                {
+                    <div class="empty-state">No prepared spells.</div>
+                }
+                else
+                {
+                    <div class="list">
+                        @foreach (var cs in _preparedSpells)
+                        {
+                            <div class="list-row">
+                                <span class="list-row__name">@cs.Spell.Name</span>
+                                <span class="list-row__meta">@(cs.Spell.Level == 0 ? "Cantrip" : $"Level {cs.Spell.Level}")</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="section-card">
+                <div class="section-card__header">
+                    <div class="section-card__title">Actions</div>
+                </div>
+                @if (_character.Actions.Count == 0)
+                {
+                    <div class="empty-state">No actions known.</div>
+                }
+                else
+                {
+                    <div class="list">
+                        @foreach (var ca in _character.Actions)
+                        {
+                            <div class="list-row">
+                                <span class="list-row__name">@ca.ActionDef.Name</span>
+                                <span class="list-row__meta">@ca.ActionDef.ActionType</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="detail-panel">
+            <div class="detail-panel__title">Session Log</div>
+
+            <div class="form-panel">
+                <div class="form-field">
+                    <textarea rows="2" value="@_manualEntryText" @oninput="e => _manualEntryText = e.Value?.ToString() ?? string.Empty" placeholder="Log a note..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" @onclick="LogManualEntry" disabled="@(string.IsNullOrWhiteSpace(_manualEntryText) || string.IsNullOrEmpty(_selectedSessionId))">Log</button>
+                </div>
+            </div>
+
+            @if (string.IsNullOrEmpty(_selectedSessionId))
+            {
+                <div class="empty-state">No session selected — create one from the campaign page first.</div>
+            }
+            else if (_entries.Count == 0)
+            {
+                <div class="empty-state">Nothing logged yet.</div>
+            }
+            else
+            {
+                @foreach (var entry in _entries)
+                {
+                    <div class="session-card">
+                        <div class="session-card__date">
+                            @entry.CreatedUtc.ToLocalTime().ToString("h:mm tt")
+                            <span class="badge @(entry.Source == EntrySource.Dice ? "badge--srd" : "badge--homebrew")">@entry.Source</span>
+                        </div>
+                        <div class="session-card__notes">
+                            @entry.Description
+                            @if (TryFormatDiceTotal(entry.DiceResultJson) is { } total)
+                            {
+                                <text> — Total: @total</text>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private Character? _character;
+    private List<SessionLog> _sessions = [];
+    private string _selectedSessionId = "";
+    private List<ActionEntry> _entries = [];
+    private List<CharacterSpell> _preparedSpells = [];
+    private List<(Item Item, string Dice)> _weapons = [];
+
+    private RollMode _rollMode = RollMode.Normal;
+    private bool _addProficiency;
+    private DiceResult? _lastResult;
+    private string _manualEntryText = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _character = await CharacterRepository.GetSheetAsync(Id);
+        if (_character is null) return;
+
+        _preparedSpells = _character.Spells.Where(cs => cs.IsPrepared).OrderBy(cs => cs.Spell.Level).ThenBy(cs => cs.Spell.Name).ToList();
+        _weapons = _character.Items
+            .Where(ci => ci.Item.Category == "Weapon")
+            .Select(ci => (ci.Item, Dice: WeaponDiceParser.ExtractDamageDice(ci.Item.PropertiesJson)))
+            .Where(x => x.Dice is not null)
+            .Select(x => (x.Item, x.Dice!))
+            .ToList();
+
+        _sessions = _character.Campaigns
+            .SelectMany(cc => cc.Campaign.Sessions)
+            .OrderByDescending(s => s.SessionDate)
+            .ToList();
+        if (_sessions.Count > 0)
+            _selectedSessionId = _sessions[0].Id.ToString();
+
+        await LoadEntriesAsync();
+    }
+
+    private async Task OnSessionChanged(ChangeEventArgs e)
+    {
+        _selectedSessionId = e.Value?.ToString() ?? "";
+        await LoadEntriesAsync();
+    }
+
+    private async Task LoadEntriesAsync()
+    {
+        if (string.IsNullOrEmpty(_selectedSessionId) || !Guid.TryParse(_selectedSessionId, out var sessionId))
+        {
+            _entries = [];
+            return;
+        }
+        var all = await ActionEntryRepository.ListAsync();
+        _entries = all.Where(e => e.SessionLogId == sessionId)
+            .OrderByDescending(e => e.CreatedUtc)
+            .ToList();
+    }
+
+    private static string SessionLabel(SessionLog s) =>
+        (string.IsNullOrWhiteSpace(s.Title) ? s.SessionDate.ToString("MMM d, yyyy") : s.Title) + " (" + s.SessionDate.ToString("MMM d, yyyy") + ")";
+
+    private IEnumerable<(string Label, int Mod)> AbilityRows()
+    {
+        if (_character is null) yield break;
+        var a = _character.Abilities;
+        yield return ("STR", a.StrMod);
+        yield return ("DEX", a.DexMod);
+        yield return ("CON", a.ConMod);
+        yield return ("INT", a.IntMod);
+        yield return ("WIS", a.WisMod);
+        yield return ("CHA", a.ChaMod);
+    }
+
+    private static string FormatMod(int mod) => mod >= 0 ? $"+{mod}" : mod.ToString();
+
+    private void RollAbilityCheck(string ability, int mod)
+    {
+        var modifier = mod + (_addProficiency && _character is not null ? _character.ProficiencyBonus : 0);
+        var label = $"{ability} check" + (_addProficiency ? " (proficient)" : "");
+        _lastResult = DiceRoller.RollD20(modifier, _rollMode, label);
+    }
+
+    private void RollWeaponDamage(Item item, string dice)
+    {
+        if (!DiceExpression.TryParse(dice, out var expr) || expr is null) return;
+        _lastResult = DiceRoller.Roll(expr, $"{item.Name} damage");
+    }
+
+    private static string HighlightClass(Die d) =>
+        d is { Sides: 20, Value: 20 } ? "glow" : d is { Sides: 20, Value: 1 } ? "fumble" : "";
+
+    private static int? TryFormatDiceTotal(string? diceResultJson)
+    {
+        if (string.IsNullOrWhiteSpace(diceResultJson)) return null;
+        try
+        {
+            var result = JsonSerializer.Deserialize<DiceResult>(diceResultJson);
+            return result?.Total;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private async Task LogLastResult()
+    {
+        if (_character is null || _lastResult is null || string.IsNullOrEmpty(_selectedSessionId)) return;
+        if (!Guid.TryParse(_selectedSessionId, out var sessionId)) return;
+
+        await ActionEntryRepository.AddAsync(new ActionEntry
+        {
+            SessionLogId = sessionId,
+            CharacterId = _character.Id,
+            Description = _lastResult.Label,
+            DiceResultJson = JsonSerializer.Serialize(_lastResult),
+            Source = EntrySource.Dice,
+            CreatedUtc = DateTime.UtcNow
+        });
+        await ActionEntryRepository.SaveChangesAsync();
+        await LoadEntriesAsync();
+    }
+
+    private async Task LogManualEntry()
+    {
+        if (_character is null || string.IsNullOrWhiteSpace(_manualEntryText) || string.IsNullOrEmpty(_selectedSessionId)) return;
+        if (!Guid.TryParse(_selectedSessionId, out var sessionId)) return;
+
+        await ActionEntryRepository.AddAsync(new ActionEntry
+        {
+            SessionLogId = sessionId,
+            CharacterId = _character.Id,
+            Description = _manualEntryText.Trim(),
+            Source = EntrySource.Manual,
+            CreatedUtc = DateTime.UtcNow
+        });
+        await ActionEntryRepository.SaveChangesAsync();
+        _manualEntryText = "";
+        await LoadEntriesAsync();
+    }
+}
