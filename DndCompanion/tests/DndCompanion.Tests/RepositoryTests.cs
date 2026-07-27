@@ -64,6 +64,31 @@ public class RepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task Campaign_repository_loads_all_sessions_with_GetWithCharactersAsync()
+    {
+        // Ordering is a client-side concern (see the comment on GetWithCharactersAsync) — this
+        // only asserts the sessions load at all, with the right data.
+        var campaignRepo = new EfCampaignRepository(_db);
+        var sessionRepo = new EfRepository<SessionLog>(_db);
+
+        var campaign = new Campaign { Name = "Beyond the Blue Door" };
+        await campaignRepo.AddAsync(campaign);
+        await campaignRepo.SaveChangesAsync();
+
+        await sessionRepo.AddAsync(new SessionLog { CampaignId = campaign.Id, SessionDate = new DateTime(2026, 2, 1), Notes = "Session two" });
+        await sessionRepo.AddAsync(new SessionLog { CampaignId = campaign.Id, SessionDate = new DateTime(2026, 1, 1), Notes = "Session zero" });
+        await sessionRepo.SaveChangesAsync();
+
+        var loaded = await campaignRepo.GetWithCharactersAsync(campaign.Id);
+
+        Assert.NotNull(loaded);
+        var ordered = loaded!.Sessions.OrderBy(s => s.SessionDate).ToList();
+        Assert.Equal(2, ordered.Count);
+        Assert.Equal("Session zero", ordered[0].Notes);
+        Assert.Equal("Session two", ordered[1].Notes);
+    }
+
+    [Fact]
     public async Task Character_repository_GetSheetAsync_includes_homebrew_item_with_source()
     {
         var characterRepo = new EfCharacterRepository(_db);

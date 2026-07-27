@@ -36,6 +36,17 @@ electronize start
 window pointed at it — one command, one process tree. First run installs
 `node_modules` under `obj/Host` (a few seconds); subsequent runs are fast.
 
+`electron.manifest.json` sets `"environment": "Development"`, so this always
+runs with dev behavior — including `DevSeed` (see below). There's no separate
+"release" build/packaging step yet this early in the project; when one exists,
+that manifest value is what to flip for a real production package.
+
+**Shortcut**: a `dnd-dev` shell function (added to `~/.zshrc`) does the same
+thing from any directory:
+```bash
+dnd-dev
+```
+
 If you only want the web app (no Electron shell), e.g. for quick UI iteration
 in a browser:
 ```bash
@@ -76,6 +87,15 @@ code changes needed.
 
 Browse it at `/spells`, `/items`, `/actions` — search box + filter chips, a
 dense list, and a detail panel on row click.
+
+## Dev seed data
+`DevSeed.BaloneySlimAsync` (`src/DndCompanion.Infrastructure/Dev/DevSeed.cs`) seeds
+one hand-authored test character on startup, gated behind
+`app.Environment.IsDevelopment()` — never runs in a packaged/production build.
+Idempotent by character name: it checks for an existing "Baloney Slim" first, so
+re-running is a no-op. If you edit the seed data after that character already
+exists in your DB, the change won't retroactively apply — delete the character
+(via the UI, or the db file) first.
 
 ## EF Core migrations
 The `Initial` migration + local SQLite DB (`dndcompanion.db`, next to the built

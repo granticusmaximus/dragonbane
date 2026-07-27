@@ -4,6 +4,7 @@
 @inject ICampaignRepository CampaignRepository
 @inject ICharacterRepository CharacterRepository
 @inject IRepository<CampaignCharacter> CampaignCharacterRepository
+@inject IRepository<SessionLog> SessionLogRepository
 @inject NavigationManager Nav
 
 <PageTitle>@(_campaign?.Name ?? "Campaign")</PageTitle>
@@ -38,7 +39,7 @@ else
                 </div>
                 <div class="form-field form-field--span-2">
                     <label>Notes</label>
-                    <textarea @bind="_campaign.Notes"></textarea>
+                    <textarea @bind="_campaign.Notes" @bind:event="oninput"></textarea>
                 </div>
                 <div class="form-field form-field--checkbox">
                     <input type="checkbox" id="active" @bind="_campaign.IsActive" />
@@ -99,6 +100,51 @@ else
             </div>
         }
     </div>
+
+    <div class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Sessions</div>
+            <button class="btn btn-ghost" @onclick="() => _showSessionForm = !_showSessionForm">+ New Session</button>
+        </div>
+
+        @if (_showSessionForm)
+        {
+            <div class="form-panel">
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label>Date</label>
+                        <input type="date" @bind="_newSessionDate" />
+                    </div>
+                    <div class="form-field form-field--span-2">
+                        <label>Notes / Recap</label>
+                        <textarea rows="8" @bind="_newSessionNotes" @bind:event="oninput" placeholder="What happened this session..."></textarea>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" @onclick="CreateSession" disabled="@string.IsNullOrWhiteSpace(_newSessionNotes)">Add Session</button>
+                    <button class="btn btn-ghost" @onclick="() => _showSessionForm = false">Cancel</button>
+                </div>
+            </div>
+        }
+
+        @if (_campaign.Sessions.Count == 0)
+        {
+            <div class="empty-state">No sessions logged yet.</div>
+        }
+        else
+        {
+            @foreach (var session in _campaign.Sessions.OrderBy(s => s.SessionDate))
+            {
+                <div class="session-card">
+                    <div class="session-card__date">@session.SessionDate.ToString("MMMM d, yyyy")</div>
+                    @if (!string.IsNullOrWhiteSpace(session.Notes))
+                    {
+                        <div class="session-card__notes">@session.Notes</div>
+                    }
+                </div>
+            }
+        }
+    </div>
 }
 
 @code {
@@ -108,6 +154,10 @@ else
     private List<Character> _availableCharacters = [];
     private string _selectedCharacterId = "";
     private bool _editing;
+
+    private bool _showSessionForm;
+    private DateTime _newSessionDate = DateTime.Today;
+    private string _newSessionNotes = "";
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -155,6 +205,24 @@ else
         if (_campaign is null) return;
         _campaign.Characters.Remove(cc);
         await CampaignRepository.SaveChangesAsync();
+        await LoadAsync();
+    }
+
+    private async Task CreateSession()
+    {
+        if (_campaign is null || string.IsNullOrWhiteSpace(_newSessionNotes)) return;
+
+        await SessionLogRepository.AddAsync(new SessionLog
+        {
+            CampaignId = _campaign.Id,
+            SessionDate = _newSessionDate,
+            Notes = _newSessionNotes.Trim()
+        });
+        await SessionLogRepository.SaveChangesAsync();
+
+        _newSessionDate = DateTime.Today;
+        _newSessionNotes = "";
+        _showSessionForm = false;
         await LoadAsync();
     }
 }

@@ -6,7 +6,7 @@
   "name": "DndCompanion.Host",
   "author": "",
   "singleInstance": false,
-  "environment": "Production",
+  "environment": "Development",
   "build": {
     "appId": "com.DndCompanion.Host.app",
     "productName": "DndCompanion.Host",

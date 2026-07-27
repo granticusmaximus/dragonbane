@@ -26,7 +26,7 @@
             </div>
             <div class="form-field form-field--span-2">
                 <label>Notes</label>
-                <textarea @bind="_newNotes" placeholder="Optional notes"></textarea>
+                <textarea @bind="_newNotes" @bind:event="oninput" placeholder="Optional notes"></textarea>
             </div>
             <div class="form-field form-field--checkbox">
                 <input type="checkbox" id="newActive" @bind="_newIsActive" />

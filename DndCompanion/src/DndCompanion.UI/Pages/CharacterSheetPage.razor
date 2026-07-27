@@ -95,7 +95,7 @@ else
                     <div class="form-field"><label>Category</label><input @bind="_homebrewItem.Category" placeholder="e.g. Weapon" /></div>
                     <div class="form-field"><label>Weight (lb.)</label><input type="number" step="0.1" @bind="_homebrewItem.WeightLb" /></div>
                     <div class="form-field"><label>Cost</label><input @bind="_homebrewItem.Cost" placeholder="e.g. 15 GP" /></div>
-                    <div class="form-field form-field--span-2"><label>Rules Text</label><textarea @bind="_homebrewItem.RulesText"></textarea></div>
+                    <div class="form-field form-field--span-2"><label>Rules Text</label><textarea @bind="_homebrewItem.RulesText" @bind:event="oninput"></textarea></div>
                 </div>
                 <div class="form-actions">
                     <button class="btn btn-primary" @onclick="CreateHomebrewItem" disabled="@string.IsNullOrWhiteSpace(_homebrewItem.Name)">Create &amp; Add</button>
@@ -168,7 +168,7 @@ else
                         <input type="checkbox" id="conc" @bind="_homebrewSpell.Concentration" />
                         <label for="conc">Concentration</label>
                     </div>
-                    <div class="form-field form-field--span-2"><label>Rules Text</label><textarea @bind="_homebrewSpell.RulesText"></textarea></div>
+                    <div class="form-field form-field--span-2"><label>Rules Text</label><textarea @bind="_homebrewSpell.RulesText" @bind:event="oninput"></textarea></div>
                 </div>
                 <div class="form-actions">
                     <button class="btn btn-primary" @onclick="CreateHomebrewSpell" disabled="@string.IsNullOrWhiteSpace(_homebrewSpell.Name)">Create &amp; Add</button>
@@ -232,7 +232,7 @@ else
                             }
                         </select>
                     </div>
-                    <div class="form-field form-field--span-2"><label>Rules Text</label><textarea @bind="_homebrewAction.RulesText"></textarea></div>
+                    <div class="form-field form-field--span-2"><label>Rules Text</label><textarea @bind="_homebrewAction.RulesText" @bind:event="oninput"></textarea></div>
                 </div>
                 <div class="form-actions">
                     <button class="btn btn-primary" @onclick="CreateHomebrewAction" disabled="@string.IsNullOrWhiteSpace(_homebrewAction.Name)">Create &amp; Add</button>
