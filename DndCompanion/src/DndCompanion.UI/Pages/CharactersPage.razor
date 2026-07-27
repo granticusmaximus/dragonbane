@@ -1,0 +1,162 @@
+@page "/characters"
+@using DndCompanion.Application.Abstractions
+@using DndCompanion.Domain.Entities
+@using DndCompanion.Domain.ValueObjects
+@inject ICharacterRepository CharacterRepository
+@inject NavigationManager Nav
+
+<PageTitle>Characters</PageTitle>
+
+<div class="main__header">
+    <h1 class="main__title">Characters</h1>
+    <p class="main__subtitle">@_characters.Count character@(_characters.Count == 1 ? "" : "s").</p>
+</div>
+
+<div class="toolbar">
+    <button class="btn btn-primary" @onclick="ShowCreateForm">+ New Character</button>
+</div>
+
+@if (_showCreateForm)
+{
+    <div class="form-panel">
+        <div class="form-grid">
+            <div class="form-field">
+                <label>Name</label>
+                <input value="@_form.Name" @oninput="e => _form.Name = e.Value?.ToString() ?? string.Empty" placeholder="Character name" />
+            </div>
+            <div class="form-field">
+                <label>Species</label>
+                <input @bind="_form.Species" placeholder="e.g. Human, Aasimar" />
+            </div>
+            <div class="form-field">
+                <label>Class</label>
+                <input @bind="_form.Class" placeholder="e.g. Cleric" />
+            </div>
+            <div class="form-field">
+                <label>Subclass</label>
+                <input @bind="_form.Subclass" placeholder="Optional" />
+            </div>
+            <div class="form-field">
+                <label>Level</label>
+                <input type="number" min="1" max="20" @bind="_form.Level" />
+            </div>
+            <div class="form-field">
+                <label>Background</label>
+                <input @bind="_form.Background" placeholder="Optional" />
+            </div>
+            <div class="form-field">
+                <label>Proficiency Bonus</label>
+                <input type="number" min="2" max="6" @bind="_form.ProficiencyBonus" />
+            </div>
+        </div>
+
+        <div class="form-grid" style="margin-top: 12px;">
+            <div class="form-field">
+                <label>Strength</label>
+                <input type="number" min="1" max="30" @bind="_form.Strength" />
+            </div>
+            <div class="form-field">
+                <label>Dexterity</label>
+                <input type="number" min="1" max="30" @bind="_form.Dexterity" />
+            </div>
+            <div class="form-field">
+                <label>Constitution</label>
+                <input type="number" min="1" max="30" @bind="_form.Constitution" />
+            </div>
+            <div class="form-field">
+                <label>Intelligence</label>
+                <input type="number" min="1" max="30" @bind="_form.Intelligence" />
+            </div>
+            <div class="form-field">
+                <label>Wisdom</label>
+                <input type="number" min="1" max="30" @bind="_form.Wisdom" />
+            </div>
+            <div class="form-field">
+                <label>Charisma</label>
+                <input type="number" min="1" max="30" @bind="_form.Charisma" />
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button class="btn btn-primary" @onclick="CreateCharacter" disabled="@string.IsNullOrWhiteSpace(_form.Name)">Create</button>
+            <button class="btn btn-ghost" @onclick="CancelCreate">Cancel</button>
+        </div>
+    </div>
+}
+
+@if (_characters.Count == 0)
+{
+    <div class="empty-state">No characters yet. Create one to get started.</div>
+}
+else
+{
+    <div class="list">
+        @foreach (var character in _characters)
+        {
+            <button class="list-row" @onclick="() => GoToCharacter(character.Id)">
+                <span class="list-row__name">@character.Name</span>
+                <span class="list-row__meta">@character.Species &middot; @character.Class Lv @character.Level</span>
+            </button>
+        }
+    </div>
+}
+
+@code {
+    private sealed class CharacterForm
+    {
+        public string Name = "";
+        public string Species = "";
+        public string Class = "";
+        public string? Subclass;
+        public int Level = 1;
+        public string? Background;
+        public int ProficiencyBonus = 2;
+        public int Strength = 10, Dexterity = 10, Constitution = 10, Intelligence = 10, Wisdom = 10, Charisma = 10;
+    }
+
+    private List<Character> _characters = [];
+    private bool _showCreateForm;
+    private CharacterForm _form = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var characters = await CharacterRepository.ListAsync();
+        _characters = characters.OrderBy(c => c.Name).ToList();
+    }
+
+    private void GoToCharacter(Guid id) => Nav.NavigateTo($"/characters/{id}");
+
+    private void ShowCreateForm() => _showCreateForm = true;
+
+    private void CancelCreate()
+    {
+        _showCreateForm = false;
+        _form = new CharacterForm();
+    }
+
+    private async Task CreateCharacter()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Name)) return;
+
+        var character = new Character
+        {
+            Name = _form.Name.Trim(),
+            Species = _form.Species.Trim(),
+            Class = _form.Class.Trim(),
+            Subclass = string.IsNullOrWhiteSpace(_form.Subclass) ? null : _form.Subclass.Trim(),
+            Level = _form.Level,
+            Background = string.IsNullOrWhiteSpace(_form.Background) ? null : _form.Background.Trim(),
+            ProficiencyBonus = _form.ProficiencyBonus,
+            Abilities = new AbilityScores(
+                _form.Strength, _form.Dexterity, _form.Constitution,
+                _form.Intelligence, _form.Wisdom, _form.Charisma)
+        };
+        await CharacterRepository.AddAsync(character);
+        await CharacterRepository.SaveChangesAsync();
+
+        CancelCreate();
+        await LoadAsync();
+    }
+}

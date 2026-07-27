@@ -1,0 +1,160 @@
+@page "/campaigns/{Id:guid}"
+@using DndCompanion.Application.Abstractions
+@using DndCompanion.Domain.Entities
+@inject ICampaignRepository CampaignRepository
+@inject ICharacterRepository CharacterRepository
+@inject IRepository<CampaignCharacter> CampaignCharacterRepository
+@inject NavigationManager Nav
+
+<PageTitle>@(_campaign?.Name ?? "Campaign")</PageTitle>
+
+<a class="back-link" href="/campaigns">&larr; Back to Campaigns</a>
+
+@if (_campaign is null)
+{
+    <div class="empty-state">Campaign not found.</div>
+}
+else
+{
+    <div class="main__header">
+        <h1 class="main__title">@_campaign.Name</h1>
+        <p class="main__subtitle">
+            @(_campaign.IsActive ? "Active" : "Inactive") &middot;
+            @_campaign.Characters.Count character@(_campaign.Characters.Count == 1 ? "" : "s")
+        </p>
+    </div>
+
+    <div class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Details</div>
+            <button class="btn btn-ghost" @onclick="ToggleEdit">@(_editing ? "Done" : "Edit")</button>
+        </div>
+        @if (_editing)
+        {
+            <div class="form-grid">
+                <div class="form-field form-field--span-2">
+                    <label>Name</label>
+                    <input @bind="_campaign.Name" />
+                </div>
+                <div class="form-field form-field--span-2">
+                    <label>Notes</label>
+                    <textarea @bind="_campaign.Notes"></textarea>
+                </div>
+                <div class="form-field form-field--checkbox">
+                    <input type="checkbox" id="active" @bind="_campaign.IsActive" />
+                    <label for="active">Active</label>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" @onclick="SaveDetails">Save</button>
+                <button class="btn btn-danger" @onclick="DeleteCampaign">Delete Campaign</button>
+            </div>
+        }
+        else if (!string.IsNullOrWhiteSpace(_campaign.Notes))
+        {
+            <p>@_campaign.Notes</p>
+        }
+    </div>
+
+    <div class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Characters</div>
+        </div>
+
+        @if (_availableCharacters.Count > 0)
+        {
+            <div class="toolbar">
+                <select class="filter-select" @bind="_selectedCharacterId">
+                    <option value="">Add existing character...</option>
+                    @foreach (var c in _availableCharacters)
+                    {
+                        <option value="@c.Id">@c.Name (@c.Species @c.Class)</option>
+                    }
+                </select>
+                <button class="btn" @onclick="AddCharacter" disabled="@string.IsNullOrEmpty(_selectedCharacterId)">Add</button>
+            </div>
+        }
+
+        @if (_campaign.Characters.Count == 0)
+        {
+            <div class="empty-state">
+                No characters in this campaign yet. Create one on the
+                <a href="/characters">Characters</a> page, then add them here.
+            </div>
+        }
+        else
+        {
+            <div class="list">
+                @foreach (var cc in _campaign.Characters)
+                {
+                    <div class="list-row">
+                        <span class="list-row__name list-row__name--clickable"
+                              @onclick="() => GoToCharacter(cc.CharacterId)">
+                            @cc.Character.Name
+                        </span>
+                        <span class="list-row__meta">@cc.Character.Species &middot; @cc.Character.Class Lv @cc.Character.Level</span>
+                        <button class="remove-btn" @onclick="() => RemoveCharacter(cc)">Remove</button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private Campaign? _campaign;
+    private List<Character> _availableCharacters = [];
+    private string _selectedCharacterId = "";
+    private bool _editing;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _campaign = await CampaignRepository.GetWithCharactersAsync(Id);
+        if (_campaign is null) return;
+
+        var allCharacters = await CharacterRepository.ListAsync();
+        var existingIds = _campaign.Characters.Select(cc => cc.CharacterId).ToHashSet();
+        _availableCharacters = allCharacters.Where(c => !existingIds.Contains(c.Id)).OrderBy(c => c.Name).ToList();
+    }
+
+    private void GoToCharacter(Guid id) => Nav.NavigateTo($"/characters/{id}");
+
+    private void ToggleEdit() => _editing = !_editing;
+
+    private async Task SaveDetails()
+    {
+        await CampaignRepository.SaveChangesAsync();
+        _editing = false;
+    }
+
+    private async Task DeleteCampaign()
+    {
+        if (_campaign is null) return;
+        CampaignRepository.Remove(_campaign);
+        await CampaignRepository.SaveChangesAsync();
+        Nav.NavigateTo("/campaigns");
+    }
+
+    private async Task AddCharacter()
+    {
+        if (_campaign is null || string.IsNullOrEmpty(_selectedCharacterId)) return;
+        if (!Guid.TryParse(_selectedCharacterId, out var characterId)) return;
+
+        await CampaignCharacterRepository.AddAsync(new CampaignCharacter { CampaignId = _campaign.Id, CharacterId = characterId });
+        await CampaignCharacterRepository.SaveChangesAsync();
+        _selectedCharacterId = "";
+        await LoadAsync();
+    }
+
+    private async Task RemoveCharacter(CampaignCharacter cc)
+    {
+        if (_campaign is null) return;
+        _campaign.Characters.Remove(cc);
+        await CampaignRepository.SaveChangesAsync();
+        await LoadAsync();
+    }
+}

@@ -15,6 +15,8 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(o => o.UseSqlite($"Data Source={sqlitePath}"));
         services.AddSingleton<IDiceRoller, DiceRoller>();
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
+        services.AddScoped<ICampaignRepository, EfCampaignRepository>();
+        services.AddScoped<ICharacterRepository, EfCharacterRepository>();
         services.AddScoped<SrdImporter>();
         // TODO: register ITranscriptionService (Whisper.net) and INoteStructurer (Ollama)
         //       in Phase 4/5.

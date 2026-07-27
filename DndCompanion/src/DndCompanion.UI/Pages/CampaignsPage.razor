@@ -1,0 +1,103 @@
+@page "/"
+@page "/campaigns"
+@using DndCompanion.Application.Abstractions
+@using DndCompanion.Domain.Entities
+@inject ICampaignRepository CampaignRepository
+@inject NavigationManager Nav
+
+<PageTitle>Campaigns</PageTitle>
+
+<div class="main__header">
+    <h1 class="main__title">Campaigns</h1>
+    <p class="main__subtitle">@_campaigns.Count campaign@(_campaigns.Count == 1 ? "" : "s").</p>
+</div>
+
+<div class="toolbar">
+    <button class="btn btn-primary" @onclick="ShowCreateForm">+ New Campaign</button>
+</div>
+
+@if (_showCreateForm)
+{
+    <div class="form-panel">
+        <div class="form-grid">
+            <div class="form-field form-field--span-2">
+                <label>Name</label>
+                <input value="@_newName" @oninput="e => _newName = e.Value?.ToString() ?? string.Empty" placeholder="Campaign name" />
+            </div>
+            <div class="form-field form-field--span-2">
+                <label>Notes</label>
+                <textarea @bind="_newNotes" placeholder="Optional notes"></textarea>
+            </div>
+            <div class="form-field form-field--checkbox">
+                <input type="checkbox" id="newActive" @bind="_newIsActive" />
+                <label for="newActive">Active</label>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-primary" @onclick="CreateCampaign" disabled="@string.IsNullOrWhiteSpace(_newName)">Create</button>
+            <button class="btn btn-ghost" @onclick="CancelCreate">Cancel</button>
+        </div>
+    </div>
+}
+
+@if (_campaigns.Count == 0)
+{
+    <div class="empty-state">No campaigns yet. Create one to get started.</div>
+}
+else
+{
+    <div class="list">
+        @foreach (var campaign in _campaigns)
+        {
+            <button class="list-row" @onclick="() => GoToCampaign(campaign.Id)">
+                <span class="list-row__name">@campaign.Name</span>
+                <span class="list-row__meta">@(campaign.IsActive ? "Active" : "Inactive")</span>
+            </button>
+        }
+    </div>
+}
+
+@code {
+    private List<Campaign> _campaigns = [];
+    private bool _showCreateForm;
+    private string _newName = "";
+    private string _newNotes = "";
+    private bool _newIsActive = true;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var campaigns = await CampaignRepository.ListAsync();
+        _campaigns = campaigns.OrderByDescending(c => c.IsActive).ThenBy(c => c.Name).ToList();
+    }
+
+    private void GoToCampaign(Guid id) => Nav.NavigateTo($"/campaigns/{id}");
+
+    private void ShowCreateForm() => _showCreateForm = true;
+
+    private void CancelCreate()
+    {
+        _showCreateForm = false;
+        _newName = "";
+        _newNotes = "";
+        _newIsActive = true;
+    }
+
+    private async Task CreateCampaign()
+    {
+        if (string.IsNullOrWhiteSpace(_newName)) return;
+
+        var campaign = new Campaign
+        {
+            Name = _newName.Trim(),
+            Notes = string.IsNullOrWhiteSpace(_newNotes) ? null : _newNotes.Trim(),
+            IsActive = _newIsActive
+        };
+        await CampaignRepository.AddAsync(campaign);
+        await CampaignRepository.SaveChangesAsync();
+
+        CancelCreate();
+        await LoadAsync();
+    }
+}

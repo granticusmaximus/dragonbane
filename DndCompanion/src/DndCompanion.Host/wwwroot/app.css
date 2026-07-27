@@ -313,6 +313,9 @@ button { cursor: pointer; }
     flex-shrink: 0;
 }
 
+.list-row__name--clickable { cursor: pointer; }
+.list-row__name--clickable:hover { color: var(--accent); }
+
 .detail-panel {
     flex: 0 0 380px;
     position: sticky;
@@ -360,6 +363,138 @@ button { cursor: pointer; }
     border: 1px dashed var(--border-default);
     border-radius: var(--radius-md);
 }
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface-raised);
+    color: var(--text-primary);
+    transition: border-color 0.1s ease, background-color 0.1s ease, color 0.1s ease;
+}
+.btn:hover { border-color: var(--accent); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.btn:disabled:hover { border-color: var(--border-subtle); }
+
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+.btn-ghost { background: transparent; border-color: transparent; color: var(--text-secondary); }
+.btn-ghost:hover { color: var(--text-primary); background: var(--bg-surface-raised); border-color: transparent; }
+
+.btn-danger { color: var(--danger); }
+.btn-danger:hover { border-color: var(--danger); }
+
+.remove-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    font-size: var(--text-sm);
+    line-height: 1;
+    padding: var(--space-1) var(--space-2);
+    flex-shrink: 0;
+}
+.remove-btn:hover { color: var(--danger); }
+
+/* ============================================================
+   Forms
+   ============================================================ */
+.form-panel {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+}
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-3);
+}
+.form-field { display: flex; flex-direction: column; gap: var(--space-1); }
+.form-field label {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+.form-field input, .form-field select, .form-field textarea {
+    background: var(--bg-inset);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: var(--space-2) var(--space-3);
+    color: var(--text-primary);
+    outline: none;
+    font-family: inherit;
+    font-size: var(--text-sm);
+}
+.form-field input:focus, .form-field select:focus, .form-field textarea:focus { border-color: var(--accent); }
+.form-field textarea { resize: vertical; min-height: 4rem; }
+.form-field--checkbox { flex-direction: row; align-items: center; }
+.form-field--checkbox input { width: auto; }
+.form-field--span-2 { grid-column: span 2; }
+.form-actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); }
+
+/* ============================================================
+   Section cards (character sheet subsections, etc.)
+   ============================================================ */
+.section-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+}
+.section-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+.section-card__title { font-size: var(--text-base); font-weight: 600; color: var(--text-primary); }
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-3);
+}
+.back-link:hover { color: var(--accent); }
+
+/* ============================================================
+   Ability score grid
+   ============================================================ */
+.ability-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
+}
+.ability-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    text-align: center;
+}
+.ability-card__label {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.ability-card__score { font-size: var(--text-xl); font-weight: 600; color: var(--text-primary); margin: var(--space-1) 0; }
+.ability-card__mod { font-size: var(--text-sm); color: var(--text-secondary); }
 
 /* ============================================================
    Badges

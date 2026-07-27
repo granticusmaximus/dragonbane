@@ -1,0 +1,548 @@
+@page "/characters/{Id:guid}"
+@using DndCompanion.Application.Abstractions
+@using DndCompanion.Domain
+@using DndCompanion.Domain.Entities
+@using DndCompanion.Domain.ValueObjects
+@inject ICharacterRepository CharacterRepository
+@inject IRepository<Item> ItemRepository
+@inject IRepository<Spell> SpellRepository
+@inject IRepository<ActionDef> ActionRepository
+@inject IRepository<ContentSource> ContentSourceRepository
+@inject IRepository<CharacterItem> CharacterItemRepository
+@inject IRepository<CharacterSpell> CharacterSpellRepository
+@inject IRepository<CharacterAction> CharacterActionRepository
+@inject NavigationManager Nav
+
+<PageTitle>@(_character?.Name ?? "Character")</PageTitle>
+
+<a class="back-link" href="/characters">&larr; Back to Characters</a>
+
+@if (_character is null)
+{
+    <div class="empty-state">Character not found.</div>
+}
+else
+{
+    <div class="main__header">
+        <h1 class="main__title">@_character.Name</h1>
+        <p class="main__subtitle">
+            @_character.Species &middot; @_character.Class@(string.IsNullOrWhiteSpace(_character.Subclass) ? "" : $" ({_character.Subclass})") &middot; Level @_character.Level
+            @if (_character.Campaigns.Count > 0)
+            {
+                @: &middot; @string.Join(", ", _character.Campaigns.Select(cc => cc.Campaign.Name))
+            }
+        </p>
+    </div>
+
+    <div class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Identity</div>
+            <button class="btn btn-ghost" @onclick="ToggleEdit">@(_editing ? "Done" : "Edit")</button>
+        </div>
+        @if (_editing)
+        {
+            <div class="form-grid">
+                <div class="form-field"><label>Name</label><input @bind="_character.Name" /></div>
+                <div class="form-field"><label>Species</label><input @bind="_character.Species" /></div>
+                <div class="form-field"><label>Class</label><input @bind="_character.Class" /></div>
+                <div class="form-field"><label>Subclass</label><input @bind="_character.Subclass" /></div>
+                <div class="form-field"><label>Level</label><input type="number" min="1" max="20" @bind="_character.Level" /></div>
+                <div class="form-field"><label>Background</label><input @bind="_character.Background" /></div>
+                <div class="form-field"><label>Proficiency Bonus</label><input type="number" min="2" max="6" @bind="_character.ProficiencyBonus" /></div>
+            </div>
+            <div class="form-grid" style="margin-top: 12px;">
+                <div class="form-field"><label>Strength</label><input type="number" min="1" max="30" @bind="_editStr" /></div>
+                <div class="form-field"><label>Dexterity</label><input type="number" min="1" max="30" @bind="_editDex" /></div>
+                <div class="form-field"><label>Constitution</label><input type="number" min="1" max="30" @bind="_editCon" /></div>
+                <div class="form-field"><label>Intelligence</label><input type="number" min="1" max="30" @bind="_editInt" /></div>
+                <div class="form-field"><label>Wisdom</label><input type="number" min="1" max="30" @bind="_editWis" /></div>
+                <div class="form-field"><label>Charisma</label><input type="number" min="1" max="30" @bind="_editCha" /></div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" @onclick="SaveIdentity">Save</button>
+                <button class="btn btn-danger" @onclick="DeleteCharacter">Delete Character</button>
+            </div>
+        }
+        else if (!string.IsNullOrWhiteSpace(_character.Background))
+        {
+            <p>Background: @_character.Background</p>
+        }
+    </div>
+
+    <div class="ability-grid">
+        @foreach (var row in AbilityRows())
+        {
+            <div class="ability-card">
+                <div class="ability-card__label">@row.Label</div>
+                <div class="ability-card__score">@row.Score</div>
+                <div class="ability-card__mod">@FormatMod(row.Mod)</div>
+            </div>
+        }
+    </div>
+
+    <!-- ===================== Equipment ===================== -->
+    <div class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Equipment</div>
+            <button class="btn btn-ghost" @onclick="() => _showHomebrewItemForm = !_showHomebrewItemForm">+ Homebrew Item</button>
+        </div>
+
+        @if (_showHomebrewItemForm)
+        {
+            <div class="form-panel">
+                <div class="form-grid">
+                    <div class="form-field"><label>Name</label><input @bind="_homebrewItem.Name" /></div>
+                    <div class="form-field"><label>Category</label><input @bind="_homebrewItem.Category" placeholder="e.g. Weapon" /></div>
+                    <div class="form-field"><label>Weight (lb.)</label><input type="number" step="0.1" @bind="_homebrewItem.WeightLb" /></div>
+                    <div class="form-field"><label>Cost</label><input @bind="_homebrewItem.Cost" placeholder="e.g. 15 GP" /></div>
+                    <div class="form-field form-field--span-2"><label>Rules Text</label><textarea @bind="_homebrewItem.RulesText"></textarea></div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" @onclick="CreateHomebrewItem" disabled="@string.IsNullOrWhiteSpace(_homebrewItem.Name)">Create &amp; Add</button>
+                    <button class="btn btn-ghost" @onclick="() => _showHomebrewItemForm = false">Cancel</button>
+                </div>
+            </div>
+        }
+
+        @if (_availableItems.Count > 0)
+        {
+            <div class="toolbar">
+                <select class="filter-select" @bind="_selectedItemId">
+                    <option value="">Add existing item...</option>
+                    @foreach (var i in _availableItems)
+                    {
+                        <option value="@i.Id">@i.Name (@i.Category)</option>
+                    }
+                </select>
+                <button class="btn" @onclick="AddItem" disabled="@string.IsNullOrEmpty(_selectedItemId)">Add</button>
+            </div>
+        }
+
+        @if (_character.Items.Count == 0)
+        {
+            <div class="empty-state">No equipment yet.</div>
+        }
+        else
+        {
+            <div class="list">
+                @foreach (var ci in _character.Items)
+                {
+                    <div class="list-row">
+                        <span class="list-row__name">@ci.Item.Name</span>
+                        <span class="list-row__meta">&times;@ci.Quantity</span>
+                        <span class="badge @SourceBadgeClass(ci.Item.Source)">@ci.Item.Source.Kind</span>
+                        <button class="remove-btn" @onclick="() => RemoveItem(ci)">Remove</button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- ===================== Spells ===================== -->
+    <div class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Spells</div>
+            <button class="btn btn-ghost" @onclick="() => _showHomebrewSpellForm = !_showHomebrewSpellForm">+ Homebrew Spell</button>
+        </div>
+
+        @if (_showHomebrewSpellForm)
+        {
+            <div class="form-panel">
+                <div class="form-grid">
+                    <div class="form-field"><label>Name</label><input @bind="_homebrewSpell.Name" /></div>
+                    <div class="form-field"><label>Level (0 = cantrip)</label><input type="number" min="0" max="9" @bind="_homebrewSpell.Level" /></div>
+                    <div class="form-field">
+                        <label>School</label>
+                        <select @bind="_homebrewSpell.School">
+                            @foreach (var school in Enum.GetValues<SpellSchool>())
+                            {
+                                <option value="@school">@school</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-field"><label>Casting Time</label><input @bind="_homebrewSpell.CastingTime" placeholder="e.g. Action" /></div>
+                    <div class="form-field"><label>Range</label><input @bind="_homebrewSpell.Range" /></div>
+                    <div class="form-field"><label>Components</label><input @bind="_homebrewSpell.Components" placeholder="e.g. V, S" /></div>
+                    <div class="form-field"><label>Duration</label><input @bind="_homebrewSpell.Duration" /></div>
+                    <div class="form-field form-field--checkbox">
+                        <input type="checkbox" id="conc" @bind="_homebrewSpell.Concentration" />
+                        <label for="conc">Concentration</label>
+                    </div>
+                    <div class="form-field form-field--span-2"><label>Rules Text</label><textarea @bind="_homebrewSpell.RulesText"></textarea></div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" @onclick="CreateHomebrewSpell" disabled="@string.IsNullOrWhiteSpace(_homebrewSpell.Name)">Create &amp; Add</button>
+                    <button class="btn btn-ghost" @onclick="() => _showHomebrewSpellForm = false">Cancel</button>
+                </div>
+            </div>
+        }
+
+        @if (_availableSpells.Count > 0)
+        {
+            <div class="toolbar">
+                <select class="filter-select" @bind="_selectedSpellId">
+                    <option value="">Add existing spell...</option>
+                    @foreach (var s in _availableSpells)
+                    {
+                        <option value="@s.Id">@s.Name (@(s.Level == 0 ? "Cantrip" : $"Lv {s.Level}"))</option>
+                    }
+                </select>
+                <button class="btn" @onclick="AddSpell" disabled="@string.IsNullOrEmpty(_selectedSpellId)">Add</button>
+            </div>
+        }
+
+        @if (_character.Spells.Count == 0)
+        {
+            <div class="empty-state">No spells yet.</div>
+        }
+        else
+        {
+            <div class="list">
+                @foreach (var cs in _character.Spells)
+                {
+                    <div class="list-row">
+                        <span class="list-row__name">@cs.Spell.Name</span>
+                        <span class="list-row__meta">@(cs.Spell.Level == 0 ? "Cantrip" : $"Level {cs.Spell.Level}") &middot; @(cs.IsPrepared ? "Prepared" : "Known")</span>
+                        <span class="badge @SourceBadgeClass(cs.Spell.Source)">@cs.Spell.Source.Kind</span>
+                        <button class="remove-btn" @onclick="() => RemoveSpell(cs)">Remove</button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- ===================== Actions ===================== -->
+    <div class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Actions</div>
+            <button class="btn btn-ghost" @onclick="() => _showHomebrewActionForm = !_showHomebrewActionForm">+ Homebrew Action</button>
+        </div>
+
+        @if (_showHomebrewActionForm)
+        {
+            <div class="form-panel">
+                <div class="form-grid">
+                    <div class="form-field"><label>Name</label><input @bind="_homebrewAction.Name" /></div>
+                    <div class="form-field">
+                        <label>Type</label>
+                        <select @bind="_homebrewAction.ActionType">
+                            @foreach (var type in Enum.GetValues<ActionType>())
+                            {
+                                <option value="@type">@type</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-field form-field--span-2"><label>Rules Text</label><textarea @bind="_homebrewAction.RulesText"></textarea></div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" @onclick="CreateHomebrewAction" disabled="@string.IsNullOrWhiteSpace(_homebrewAction.Name)">Create &amp; Add</button>
+                    <button class="btn btn-ghost" @onclick="() => _showHomebrewActionForm = false">Cancel</button>
+                </div>
+            </div>
+        }
+
+        @if (_availableActions.Count > 0)
+        {
+            <div class="toolbar">
+                <select class="filter-select" @bind="_selectedActionId">
+                    <option value="">Add existing action...</option>
+                    @foreach (var a in _availableActions)
+                    {
+                        <option value="@a.Id">@a.Name (@a.ActionType)</option>
+                    }
+                </select>
+                <button class="btn" @onclick="AddAction" disabled="@string.IsNullOrEmpty(_selectedActionId)">Add</button>
+            </div>
+        }
+
+        @if (_character.Actions.Count == 0)
+        {
+            <div class="empty-state">No actions yet.</div>
+        }
+        else
+        {
+            <div class="list">
+                @foreach (var ca in _character.Actions)
+                {
+                    <div class="list-row">
+                        <span class="list-row__name">@ca.ActionDef.Name</span>
+                        <span class="list-row__meta">@ca.ActionDef.ActionType</span>
+                        <span class="badge @SourceBadgeClass(ca.ActionDef.Source)">@ca.ActionDef.Source.Kind</span>
+                        <button class="remove-btn" @onclick="() => RemoveAction(ca)">Remove</button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private sealed class HomebrewItemForm
+    {
+        public string Name = "";
+        public string Category = "";
+        public double? WeightLb;
+        public string? Cost;
+        public string? RulesText;
+    }
+
+    private sealed class HomebrewSpellForm
+    {
+        public string Name = "";
+        public int Level;
+        public SpellSchool School = SpellSchool.Evocation;
+        public string CastingTime = "Action";
+        public string Range = "";
+        public string Components = "V, S";
+        public string Duration = "Instantaneous";
+        public bool Concentration;
+        public string? RulesText;
+    }
+
+    private sealed class HomebrewActionForm
+    {
+        public string Name = "";
+        public DndCompanion.Domain.ActionType ActionType = DndCompanion.Domain.ActionType.Action;
+        public string? RulesText;
+    }
+
+    [Parameter] public Guid Id { get; set; }
+
+    private Character? _character;
+    private bool _editing;
+    private int _editStr, _editDex, _editCon, _editInt, _editWis, _editCha;
+
+    private List<Item> _availableItems = [];
+    private string _selectedItemId = "";
+    private bool _showHomebrewItemForm;
+    private HomebrewItemForm _homebrewItem = new();
+
+    private List<Spell> _availableSpells = [];
+    private string _selectedSpellId = "";
+    private bool _showHomebrewSpellForm;
+    private HomebrewSpellForm _homebrewSpell = new();
+
+    private List<ActionDef> _availableActions = [];
+    private string _selectedActionId = "";
+    private bool _showHomebrewActionForm;
+    private HomebrewActionForm _homebrewAction = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _character = await CharacterRepository.GetSheetAsync(Id);
+        if (_character is null) return;
+
+        var allItems = await ItemRepository.ListAsync();
+        var attachedItemIds = _character.Items.Select(ci => ci.ItemId).ToHashSet();
+        _availableItems = allItems.Where(i => !attachedItemIds.Contains(i.Id)).OrderBy(i => i.Name).ToList();
+
+        var allSpells = await SpellRepository.ListAsync();
+        var attachedSpellIds = _character.Spells.Select(cs => cs.SpellId).ToHashSet();
+        _availableSpells = allSpells.Where(s => !attachedSpellIds.Contains(s.Id)).OrderBy(s => s.Level).ThenBy(s => s.Name).ToList();
+
+        var allActions = await ActionRepository.ListAsync();
+        var attachedActionIds = _character.Actions.Select(ca => ca.ActionDefId).ToHashSet();
+        _availableActions = allActions.Where(a => !attachedActionIds.Contains(a.Id)).OrderBy(a => a.Name).ToList();
+    }
+
+    private void ToggleEdit()
+    {
+        if (!_editing && _character is not null)
+        {
+            _editStr = _character.Abilities.Strength;
+            _editDex = _character.Abilities.Dexterity;
+            _editCon = _character.Abilities.Constitution;
+            _editInt = _character.Abilities.Intelligence;
+            _editWis = _character.Abilities.Wisdom;
+            _editCha = _character.Abilities.Charisma;
+        }
+        _editing = !_editing;
+    }
+
+    private async Task SaveIdentity()
+    {
+        if (_character is null) return;
+        _character.Abilities = new AbilityScores(_editStr, _editDex, _editCon, _editInt, _editWis, _editCha);
+        await CharacterRepository.SaveChangesAsync();
+        _editing = false;
+    }
+
+    private async Task DeleteCharacter()
+    {
+        if (_character is null) return;
+        CharacterRepository.Remove(_character);
+        await CharacterRepository.SaveChangesAsync();
+        Nav.NavigateTo("/characters");
+    }
+
+    private IEnumerable<(string Label, int Score, int Mod)> AbilityRows()
+    {
+        if (_character is null) yield break;
+        var a = _character.Abilities;
+        yield return ("STR", a.Strength, a.StrMod);
+        yield return ("DEX", a.Dexterity, a.DexMod);
+        yield return ("CON", a.Constitution, a.ConMod);
+        yield return ("INT", a.Intelligence, a.IntMod);
+        yield return ("WIS", a.Wisdom, a.WisMod);
+        yield return ("CHA", a.Charisma, a.ChaMod);
+    }
+
+    private static string FormatMod(int mod) => mod >= 0 ? $"+{mod}" : mod.ToString();
+
+    private static string SourceBadgeClass(ContentSource source) =>
+        source.Kind == ContentKind.Srd ? "badge--srd" : "badge--homebrew";
+
+    private async Task<ContentSource> GetOrCreateHomebrewSourceAsync()
+    {
+        var sources = await ContentSourceRepository.ListAsync();
+        var existing = sources.FirstOrDefault(s => s.Kind == ContentKind.Homebrew);
+        if (existing is not null) return existing;
+
+        var homebrew = new ContentSource { Kind = ContentKind.Homebrew, Attribution = "User-created homebrew content." };
+        await ContentSourceRepository.AddAsync(homebrew);
+        await ContentSourceRepository.SaveChangesAsync();
+        return homebrew;
+    }
+
+    // ---- Items ----
+    private async Task AddItem()
+    {
+        if (_character is null || string.IsNullOrEmpty(_selectedItemId) || !Guid.TryParse(_selectedItemId, out var itemId)) return;
+        var item = await ItemRepository.GetAsync(itemId);
+        if (item is null) return;
+
+        await CharacterItemRepository.AddAsync(new CharacterItem { CharacterId = _character.Id, ItemId = itemId, Quantity = 1 });
+        await CharacterItemRepository.SaveChangesAsync();
+        _selectedItemId = "";
+        await LoadAsync();
+    }
+
+    private async Task CreateHomebrewItem()
+    {
+        if (_character is null || string.IsNullOrWhiteSpace(_homebrewItem.Name)) return;
+        var source = await GetOrCreateHomebrewSourceAsync();
+
+        var item = new Item
+        {
+            Source = source,
+            Name = _homebrewItem.Name.Trim(),
+            Category = string.IsNullOrWhiteSpace(_homebrewItem.Category) ? "Homebrew" : _homebrewItem.Category.Trim(),
+            WeightLb = _homebrewItem.WeightLb,
+            Cost = string.IsNullOrWhiteSpace(_homebrewItem.Cost) ? null : _homebrewItem.Cost.Trim(),
+            RulesText = string.IsNullOrWhiteSpace(_homebrewItem.RulesText) ? null : _homebrewItem.RulesText.Trim()
+        };
+        await ItemRepository.AddAsync(item);
+        await ItemRepository.SaveChangesAsync();
+
+        await CharacterItemRepository.AddAsync(new CharacterItem { CharacterId = _character.Id, ItemId = item.Id, Quantity = 1 });
+        await CharacterItemRepository.SaveChangesAsync();
+
+        _homebrewItem = new HomebrewItemForm();
+        _showHomebrewItemForm = false;
+        await LoadAsync();
+    }
+
+    private async Task RemoveItem(CharacterItem ci)
+    {
+        if (_character is null) return;
+        _character.Items.Remove(ci);
+        await CharacterRepository.SaveChangesAsync();
+        await LoadAsync();
+    }
+
+    // ---- Spells ----
+    private async Task AddSpell()
+    {
+        if (_character is null || string.IsNullOrEmpty(_selectedSpellId) || !Guid.TryParse(_selectedSpellId, out var spellId)) return;
+        var spell = await SpellRepository.GetAsync(spellId);
+        if (spell is null) return;
+
+        await CharacterSpellRepository.AddAsync(new CharacterSpell { CharacterId = _character.Id, SpellId = spellId, IsPrepared = true });
+        await CharacterSpellRepository.SaveChangesAsync();
+        _selectedSpellId = "";
+        await LoadAsync();
+    }
+
+    private async Task CreateHomebrewSpell()
+    {
+        if (_character is null || string.IsNullOrWhiteSpace(_homebrewSpell.Name)) return;
+        var source = await GetOrCreateHomebrewSourceAsync();
+
+        var spell = new Spell
+        {
+            Source = source,
+            Name = _homebrewSpell.Name.Trim(),
+            Level = _homebrewSpell.Level,
+            School = _homebrewSpell.School,
+            CastingTime = _homebrewSpell.CastingTime.Trim(),
+            Range = _homebrewSpell.Range.Trim(),
+            Components = _homebrewSpell.Components.Trim(),
+            Duration = _homebrewSpell.Duration.Trim(),
+            Concentration = _homebrewSpell.Concentration,
+            RulesText = string.IsNullOrWhiteSpace(_homebrewSpell.RulesText) ? null : _homebrewSpell.RulesText.Trim()
+        };
+        await SpellRepository.AddAsync(spell);
+        await SpellRepository.SaveChangesAsync();
+
+        await CharacterSpellRepository.AddAsync(new CharacterSpell { CharacterId = _character.Id, SpellId = spell.Id, IsPrepared = true });
+        await CharacterSpellRepository.SaveChangesAsync();
+
+        _homebrewSpell = new HomebrewSpellForm();
+        _showHomebrewSpellForm = false;
+        await LoadAsync();
+    }
+
+    private async Task RemoveSpell(CharacterSpell cs)
+    {
+        if (_character is null) return;
+        _character.Spells.Remove(cs);
+        await CharacterRepository.SaveChangesAsync();
+        await LoadAsync();
+    }
+
+    // ---- Actions ----
+    private async Task AddAction()
+    {
+        if (_character is null || string.IsNullOrEmpty(_selectedActionId) || !Guid.TryParse(_selectedActionId, out var actionId)) return;
+        var action = await ActionRepository.GetAsync(actionId);
+        if (action is null) return;
+
+        await CharacterActionRepository.AddAsync(new CharacterAction { CharacterId = _character.Id, ActionDefId = actionId });
+        await CharacterActionRepository.SaveChangesAsync();
+        _selectedActionId = "";
+        await LoadAsync();
+    }
+
+    private async Task CreateHomebrewAction()
+    {
+        if (_character is null || string.IsNullOrWhiteSpace(_homebrewAction.Name)) return;
+        var source = await GetOrCreateHomebrewSourceAsync();
+
+        var action = new ActionDef
+        {
+            Source = source,
+            Name = _homebrewAction.Name.Trim(),
+            ActionType = _homebrewAction.ActionType,
+            RulesText = string.IsNullOrWhiteSpace(_homebrewAction.RulesText) ? null : _homebrewAction.RulesText.Trim()
+        };
+        await ActionRepository.AddAsync(action);
+        await ActionRepository.SaveChangesAsync();
+
+        await CharacterActionRepository.AddAsync(new CharacterAction { CharacterId = _character.Id, ActionDefId = action.Id });
+        await CharacterActionRepository.SaveChangesAsync();
+
+        _homebrewAction = new HomebrewActionForm();
+        _showHomebrewActionForm = false;
+        await LoadAsync();
+    }
+
+    private async Task RemoveAction(CharacterAction ca)
+    {
+        if (_character is null) return;
+        _character.Actions.Remove(ca);
+        await CharacterRepository.SaveChangesAsync();
+        await LoadAsync();
+    }
+}
