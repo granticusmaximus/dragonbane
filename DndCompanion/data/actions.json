@@ -1,0 +1,67 @@
+[
+  {
+    "Name": "Attack",
+    "ActionType": "Action",
+    "RulesText": "Attack with a weapon or an Unarmed Strike."
+  },
+  {
+    "Name": "Dash",
+    "ActionType": "Action",
+    "RulesText": "For the rest of the turn, give yourself extra movement equal to your Speed."
+  },
+  {
+    "Name": "Disengage",
+    "ActionType": "Action",
+    "RulesText": "Your movement doesn't provoke Opportunity Attacks for the rest of the turn."
+  },
+  {
+    "Name": "Dodge",
+    "ActionType": "Action",
+    "RulesText": "Until the start of your next turn, attack rolls against you have Disadvantage, and you make Dexterity saving throws with Advantage. You lose this benefit if you have the Incapacitated condition or if your Speed is 0."
+  },
+  {
+    "Name": "Help",
+    "ActionType": "Action",
+    "RulesText": "Help another creature's ability check or attack roll, or administer first aid."
+  },
+  {
+    "Name": "Hide",
+    "ActionType": "Action",
+    "RulesText": "Make a Dexterity (Stealth) check."
+  },
+  {
+    "Name": "Influence",
+    "ActionType": "Action",
+    "RulesText": "Make a Charisma (Deception, Intimidation, Performance, or Persuasion) or Wisdom (Animal Handling) check to alter a creature's attitude."
+  },
+  {
+    "Name": "Magic",
+    "ActionType": "Action",
+    "RulesText": "Cast a spell, use a magic item, or use a magical feature."
+  },
+  {
+    "Name": "Ready",
+    "ActionType": "Action",
+    "RulesText": "Prepare to take an action in response to a trigger you define."
+  },
+  {
+    "Name": "Search",
+    "ActionType": "Action",
+    "RulesText": "Make a Wisdom (Insight, Medicine, Perception, or Survival) check."
+  },
+  {
+    "Name": "Study",
+    "ActionType": "Action",
+    "RulesText": "Make an Intelligence (Arcana, History, Investigation, Nature, or Religion) check."
+  },
+  {
+    "Name": "Utilize",
+    "ActionType": "Action",
+    "RulesText": "Use a nonmagical object."
+  },
+  {
+    "Name": "Opportunity Attack",
+    "ActionType": "Reaction",
+    "RulesText": "Combatants watch for enemies to drop their guard. If you move heedlessly past your foes, you put yourself in danger by provoking an Opportunity Attack. You can make an Opportunity Attack when a creature that you can see leaves your reach. To make the attack, take a Reaction to make one melee attack with a weapon or an Unarmed Strike against that creature. The attack occurs right before it leaves your reach. You can avoid provoking an Opportunity Attack by taking the Disengage action."
+  }
+]

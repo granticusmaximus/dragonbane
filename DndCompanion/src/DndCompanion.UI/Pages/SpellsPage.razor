@@ -1,0 +1,123 @@
+@page "/"
+@page "/spells"
+@using DndCompanion.Application.Abstractions
+@using DndCompanion.Domain
+@using DndCompanion.Domain.Entities
+@inject IRepository<Spell> SpellRepository
+
+<PageTitle>Spells</PageTitle>
+
+<div class="main__header">
+    <h1 class="main__title">Spells</h1>
+    <p class="main__subtitle">@_allSpells.Count spells from the SRD 5.2 reference.</p>
+</div>
+
+<div class="toolbar">
+    <input class="search-input" type="search" placeholder="Search spells..."
+           value="@_search" @oninput="OnSearchChanged" />
+</div>
+<div class="toolbar">
+    <button class="filter-chip @(_levelFilter is null ? "active" : "")" @onclick="() => SetLevel(null)">All levels</button>
+    <button class="filter-chip @(_levelFilter == 0 ? "active" : "")" @onclick="() => SetLevel(0)">Cantrip</button>
+    @for (var i = 1; i <= 9; i++)
+    {
+        var level = i;
+        <button class="filter-chip @(_levelFilter == level ? "active" : "")" @onclick="() => SetLevel(level)">@level</button>
+    }
+</div>
+<div class="toolbar">
+    <button class="filter-chip @(_schoolFilter is null ? "active" : "")" @onclick="() => SetSchool(null)">All schools</button>
+    @foreach (var school in Enum.GetValues<SpellSchool>())
+    {
+        <button class="filter-chip @(_schoolFilter == school ? "active" : "")" @onclick="() => SetSchool(school)">@school</button>
+    }
+</div>
+
+<div class="browse-layout">
+    <div class="list-panel">
+        <div class="result-count">@_filtered.Count of @_allSpells.Count</div>
+        @if (_filtered.Count == 0)
+        {
+            <div class="empty-state">No spells match your search.</div>
+        }
+        else
+        {
+            <div class="list">
+                @foreach (var spell in _filtered)
+                {
+                    <button class="list-row @(spell == _selected ? "selected" : "")" @onclick="() => Select(spell)">
+                        <span class="list-row__name">@spell.Name</span>
+                        <span class="list-row__meta">@LevelLabel(spell.Level) &middot; @spell.School</span>
+                        <span class="badge badge--srd">SRD</span>
+                    </button>
+                }
+            </div>
+        }
+    </div>
+
+    @if (_selected is not null)
+    {
+        <div class="detail-panel">
+            <div class="detail-panel__title">@_selected.Name</div>
+            <dl class="detail-panel__meta">
+                <div><dt>Level</dt> <dd>@LevelLabel(_selected.Level)</dd></div>
+                <div><dt>School</dt> <dd>@_selected.School</dd></div>
+                <div><dt>Casting Time</dt> <dd>@_selected.CastingTime</dd></div>
+                <div><dt>Range</dt> <dd>@_selected.Range</dd></div>
+                <div><dt>Components</dt> <dd>@_selected.Components</dd></div>
+                <div><dt>Duration</dt> <dd>@_selected.Duration@(_selected.Concentration ? " (Concentration)" : "")</dd></div>
+            </dl>
+            <div class="detail-panel__body">@_selected.RulesText</div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Spell> _allSpells = [];
+    private List<Spell> _filtered = [];
+    private Spell? _selected;
+    private string _search = "";
+    private int? _levelFilter;
+    private SpellSchool? _schoolFilter;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var spells = await SpellRepository.ListAsync();
+        _allSpells = spells.OrderBy(s => s.Level).ThenBy(s => s.Name).ToList();
+        Filter();
+    }
+
+    private void Select(Spell spell) => _selected = spell;
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        _search = e.Value?.ToString() ?? "";
+        Filter();
+    }
+
+    private void SetLevel(int? level)
+    {
+        _levelFilter = level;
+        Filter();
+    }
+
+    private void SetSchool(SpellSchool? school)
+    {
+        _schoolFilter = school;
+        Filter();
+    }
+
+    private void Filter()
+    {
+        IEnumerable<Spell> q = _allSpells;
+        if (!string.IsNullOrWhiteSpace(_search))
+            q = q.Where(s => s.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
+        if (_levelFilter is not null)
+            q = q.Where(s => s.Level == _levelFilter);
+        if (_schoolFilter is not null)
+            q = q.Where(s => s.School == _schoolFilter);
+        _filtered = q.ToList();
+    }
+
+    private static string LevelLabel(int level) => level == 0 ? "Cantrip" : $"Level {level}";
+}

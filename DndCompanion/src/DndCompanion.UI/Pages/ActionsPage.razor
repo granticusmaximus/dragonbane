@@ -1,0 +1,84 @@
+@page "/actions"
+@using DndCompanion.Application.Abstractions
+@using DndCompanion.Domain
+@using DndCompanion.Domain.Entities
+@inject IRepository<ActionDef> ActionRepository
+
+<PageTitle>Actions</PageTitle>
+
+<div class="main__header">
+    <h1 class="main__title">Actions</h1>
+    <p class="main__subtitle">@_allActions.Count actions from the SRD 5.2 reference.</p>
+</div>
+
+<div class="toolbar">
+    <input class="search-input" type="search" placeholder="Search actions..."
+           value="@_search" @oninput="OnSearchChanged" />
+</div>
+
+<div class="browse-layout">
+    <div class="list-panel">
+        <div class="result-count">@_filtered.Count of @_allActions.Count</div>
+        @if (_filtered.Count == 0)
+        {
+            <div class="empty-state">No actions match your search.</div>
+        }
+        else
+        {
+            <div class="list">
+                @foreach (var action in _filtered)
+                {
+                    <button class="list-row @(action == _selected ? "selected" : "")" @onclick="() => Select(action)">
+                        <span class="list-row__name">@action.Name</span>
+                        <span class="list-row__meta">@action.ActionType</span>
+                        <span class="badge badge--srd">SRD</span>
+                    </button>
+                }
+            </div>
+        }
+    </div>
+
+    @if (_selected is not null)
+    {
+        <div class="detail-panel">
+            <div class="detail-panel__title">@_selected.Name</div>
+            <dl class="detail-panel__meta">
+                <div><dt>Type</dt> <dd>@_selected.ActionType</dd></div>
+            </dl>
+            @if (_selected.RulesText is not null)
+            {
+                <div class="detail-panel__body">@_selected.RulesText</div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<ActionDef> _allActions = [];
+    private List<ActionDef> _filtered = [];
+    private ActionDef? _selected;
+    private string _search = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var actions = await ActionRepository.ListAsync();
+        _allActions = actions.OrderBy(a => a.Name).ToList();
+        Filter();
+    }
+
+    private void Select(ActionDef action) => _selected = action;
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        _search = e.Value?.ToString() ?? "";
+        Filter();
+    }
+
+    private void Filter()
+    {
+        IEnumerable<ActionDef> q = _allActions;
+        if (!string.IsNullOrWhiteSpace(_search))
+            q = q.Where(a => a.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
+        _filtered = q.ToList();
+    }
+}

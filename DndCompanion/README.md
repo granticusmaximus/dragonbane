@@ -39,8 +39,16 @@ window pointed at it — one command, one process tree. First run installs
 If you only want the web app (no Electron shell), e.g. for quick UI iteration
 in a browser:
 ```bash
-dotnet run --project src/DndCompanion.Host
+ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/DndCompanion.Host
 ```
+The `ASPNETCORE_ENVIRONMENT=Development` matters: ASP.NET Core only serves
+Razor Class Library / framework static web assets (`_framework/blazor.web.js`,
+so *all* interactivity) from the dev-time virtual file provider in the
+Development environment. Outside Development it expects those assets to have
+been physically composed into `wwwroot` by `dotnet publish` — which is exactly
+what `electronize start` does, so that path isn't affected. Plain
+`dotnet run` without the env var boots in Production and silently 404s on
+`blazor.web.js`, i.e. the page loads but nothing is clickable.
 
 ### If the Electron window shows nothing
 If you're running from a terminal spawned by an Electron-based host (VS Code's
@@ -53,6 +61,21 @@ Unset it for the run:
 env -u ELECTRON_RUN_AS_NODE electronize start
 ```
 This is an artifact of the launching terminal, not of Electron.NET or .NET 10.
+
+## SRD 5.2 reference data
+`/data/{spells,items,actions}.json` (321 spells, 157 items, 13 actions) is
+parsed by `SrdImporter` and seeded into SQLite on every Host startup — it's a
+no-op once a Srd `ContentSource` row exists, so it's safe to leave unconditional.
+Every row is tagged with that `ContentSource` (`ContentKind.Srd` + the CC-BY-4.0
+attribution string), keeping it legally separable from any future PHB/Homebrew
+rows. The JSON was parsed directly from the official SRD 5.2 text (via
+5e24srd.com, itself sourced from `media.dndbeyond.com/.../SRD_CC_v5.2.pdf`) —
+not hand-transcribed — so field values should match the source document. Drop
+more correctly-shaped rows into those files to extend the corpus; no importer
+code changes needed.
+
+Browse it at `/spells`, `/items`, `/actions` — search box + filter chips, a
+dense list, and a detail panel on row click.
 
 ## EF Core migrations
 The `Initial` migration + local SQLite DB (`dndcompanion.db`, next to the built

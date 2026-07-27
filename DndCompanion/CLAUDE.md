@@ -15,39 +15,60 @@ Clean Architecture. Local AI later via Ollama; local STT via Whisper.net; mic vi
 ## Architecture
 ```
 src/DndCompanion.Domain          entities, enums, value objects — NO dependencies
-src/DndCompanion.Application     use-case interfaces + dice expression parser (pure)
-src/DndCompanion.Infrastructure  EF Core + SQLite, DiceRoller, SRD import stub, DI
-src/DndCompanion.UI              Blazor Razor Class Library (host-agnostic)
-src/DndCompanion.Host            ASP.NET Core + Electron.NET shell
+src/DndCompanion.Application     use-case interfaces, IRepository<T>, dice expression parser (pure)
+src/DndCompanion.Infrastructure  EF Core + SQLite, EfRepository<T>, DiceRoller, SrdImporter, DI
+src/DndCompanion.UI              Blazor Razor Class Library (host-agnostic) — pages, layout, components
+src/DndCompanion.Host            ASP.NET Core + Electron.NET shell — App/Routes only, no page logic
 tests/DndCompanion.Tests         xUnit
+data/{spells,items,actions}.json SRD 5.2 seed content (CC-BY-4.0), parsed from the real SRD text
 ```
 Dependency rule: Domain ← Application ← Infrastructure/UI ← Host. Domain references nothing.
+UI depends only on Application (`IRepository<T>`) — never on Infrastructure or EF Core directly;
+Host's DI container is what wires `EfRepository<T>` in. This was violated once mid-session
+(pages briefly injected `IDbContextFactory<AppDbContext>` directly) and corrected — watch for
+this regression if extending the UI layer.
 
-## Current state (Phase 1 scaffold — builds and runs)
+## Current state (Phase 1 — reference + shell — done)
 - Solution + all six projects wired up; `dotnet build` and `dotnet test` are green
-  (net10.0, EF Core 10.0.10, ElectronNET.API 23.6.2 — all resolved against the
-  installed .NET 10 SDK with no version conflicts).
-- Blazor `App` root, `Routes`, `MainLayout` live in `DndCompanion.Host/Components`;
-  `DiceRoller` is mounted on a page in the `DndCompanion.UI` RCL (`Pages/DiceRollerPage.razor`,
-  routed at `/` and `/dice-roller`) and registered via `AddAdditionalAssemblies` on
-  the Host's endpoint mapping. `AddInfrastructure` wires `AppDbContext` + `IDiceRoller`.
-- Initial EF Core migration created and applied; local SQLite DB lives at
-  `src/DndCompanion.Host/bin/Debug/net10.0/dndcompanion.db`.
+  (net10.0, EF Core 10.0.10, ElectronNET.API 23.6.2, 9 passing tests).
+- Blazor `App`/`Routes` live in `DndCompanion.Host/Components` (thin — no page logic).
+  `MainLayout` (sidebar nav: Spells/Items/Actions/Dice Roller) and all pages live in
+  `DndCompanion.UI` (`Layout/MainLayout.razor`, `Pages/*.razor`).
+- `SrdImporter` parses `/data/*.json` into Spells/Items/ActionDefs, tags every row with
+  a `ContentSource` (Srd + CC-BY attribution), and runs idempotently on every Host
+  startup alongside `db.Database.MigrateAsync()` — no separate seed/migrate step needed.
+  Data was parsed programmatically from the real SRD 5.2 text (5e24srd.com, itself
+  sourced from the official `SRD_CC_v5.2.pdf`), not hand-authored — see README for
+  the sourcing chain. 321 spells, 157 items, 13 actions seeded.
+- Browse/search UI live at `/spells` (default page), `/items`, `/actions`: search box,
+  toggleable filter chips (level/school on Spells, category on Items), dense list,
+  right-side detail panel on row click. Verified interactively via Playwright + real
+  Chrome (search, filters, row selection, detail panel content all confirmed working).
+- Design system: dark-first CSS custom-property tokens in `Host/wwwroot/app.css`
+  (light theme via `prefers-color-scheme`), Inter self-hosted as two variable-weight
+  woff2 files in `Host/wwwroot/fonts/` (400–700 weight range, latin + latin-ext).
+- `IRepository<T>` (already-designed interface in Application) now has a real impl:
+  `EfRepository<T>` in Infrastructure, registered as an open generic. Uses scoped
+  `AddDbContext`, not `AddDbContextFactory` — the existing `IRepository<T>` contract
+  (`Remove` + `SaveChangesAsync` as separate calls) assumes one shared context per
+  scope, which a per-operation factory can't satisfy without redesigning the interface.
 - `electronize start` (from `src/DndCompanion.Host`) runs Kestrel + the Electron
-  window as one command — confirmed working end-to-end. Fixed one real bug along
-  the way: `Program.cs` created the Electron window before `app.Run()`, racing
-  Kestrel's startup; now uses `app.StartAsync()` / `app.WaitForShutdownAsync()`
-  so the window never loads before the server is listening.
-- `SrdImporter` is still a stub — next up (Phase 1 payload).
-  `DiceRoller` + `DiceExpression` are complete and tested (5 passing tests).
-- `DiceRoller.razor` shows the C#-driven pattern; rich SVG visuals still to port.
+  window as one command — confirmed working end-to-end, including click-interactivity.
+- Testing gotcha (not a product bug): plain `dotnet run` without
+  `ASPNETCORE_ENVIRONMENT=Development` boots in Production, where ASP.NET Core
+  won't serve RCL/framework static web assets (`_framework/blazor.web.js`) from the
+  dev-time provider — page loads but nothing is interactive. `electronize start`
+  isn't affected since it runs through `dotnet publish`, which physically composes
+  those assets into wwwroot regardless of environment.
+- `DiceRoller.razor` still shows the original minimal C#-driven pattern (styled to
+  the new design tokens); rich SVG visuals still to port — not in scope this round.
 - Known non-blocking issue: `SQLitePCLRaw.lib.e_sqlite3` 2.1.11 (transitive via
   EF Core Sqlite) has a NU1903 high-severity advisory
   (GHSA-2m69-gcr7-jv3q). Worth revisiting before shipping.
 
 ## Roadmap — build in usable slices, audio LAST
-1. Reference + shell: SRD 5.2 import → browse/search rules, spells, items  ← next
-2. Campaigns & characters: CRUD, character sheet, homebrew entry path
+1. ~~Reference + shell: SRD 5.2 import → browse/search rules, spells, items~~ ← done
+2. Campaigns & characters: CRUD, character sheet, homebrew entry path ← next
 3. Play view + dice: actions/equipment/spells + roller + ActionEntry log
 4. Audio transcript: NAudio → Whisper.net → live transcript
 5. Audio structuring: Ollama drafts notes; user confirms

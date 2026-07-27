@@ -20,4 +20,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup>
+    <!-- SRD 5.2 seed data (CC-BY-4.0) — copied next to the exe so SrdImporter can find it
+         via AppContext.BaseDirectory at runtime, in dev and when packaged by Electron.NET. -->
+    <None Include="..\..\data\**\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>data\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
 </Project>

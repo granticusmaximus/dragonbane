@@ -1,0 +1,1258 @@
+[
+  {
+    "Name": "Club",
+    "Category": "Weapon",
+    "WeightLb": 2.0,
+    "Cost": "1 SP",
+    "PropertiesJson": "{\"weaponType\": \"Simple Melee\", \"damage\": \"1d4 Bludgeoning\", \"properties\": \"Light\", \"mastery\": \"Slow\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Dagger",
+    "Category": "Weapon",
+    "WeightLb": 1.0,
+    "Cost": "2 GP",
+    "PropertiesJson": "{\"weaponType\": \"Simple Melee\", \"damage\": \"1d4 Piercing\", \"properties\": \"Finesse, Light, Thrown (Range 20/60)\", \"mastery\": \"Nick\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Greatclub",
+    "Category": "Weapon",
+    "WeightLb": 10.0,
+    "Cost": "2 SP",
+    "PropertiesJson": "{\"weaponType\": \"Simple Melee\", \"damage\": \"1d8 Bludgeoning\", \"properties\": \"Two-Handed\", \"mastery\": \"Push\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Handaxe",
+    "Category": "Weapon",
+    "WeightLb": 2.0,
+    "Cost": "5 GP",
+    "PropertiesJson": "{\"weaponType\": \"Simple Melee\", \"damage\": \"1d6 Slashing\", \"properties\": \"Light, Thrown (Range 20/60)\", \"mastery\": \"Vex\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Javelin",
+    "Category": "Weapon",
+    "WeightLb": 2.0,
+    "Cost": "5 SP",
+    "PropertiesJson": "{\"weaponType\": \"Simple Melee\", \"damage\": \"1d6 Piercing\", \"properties\": \"Thrown (Range 30/120)\", \"mastery\": \"Slow\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Light Hammer",
+    "Category": "Weapon",
+    "WeightLb": 2.0,
+    "Cost": "2 GP",
+    "PropertiesJson": "{\"weaponType\": \"Simple Melee\", \"damage\": \"1d4 Bludgeoning\", \"properties\": \"Light, Thrown (Range 20/60)\", \"mastery\": \"Nick\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Mace",
+    "Category": "Weapon",
+    "WeightLb": 4.0,
+    "Cost": "5 GP",
+    "PropertiesJson": "{\"weaponType\": \"Simple Melee\", \"damage\": \"1d6 Bludgeoning\", \"properties\": \"—\", \"mastery\": \"Sap\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Quarterstaff",
+    "Category": "Weapon",
+    "WeightLb": 4.0,
+    "Cost": "2 SP",
+    "PropertiesJson": "{\"weaponType\": \"Simple Melee\", \"damage\": \"1d6 Bludgeoning\", \"properties\": \"Versatile (1d8)\", \"mastery\": \"Topple\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Sickle",
+    "Category": "Weapon",
+    "WeightLb": 2.0,
+    "Cost": "1 GP",
+    "PropertiesJson": "{\"weaponType\": \"Simple Melee\", \"damage\": \"1d4 Slashing\", \"properties\": \"Light\", \"mastery\": \"Nick\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Spear",
+    "Category": "Weapon",
+    "WeightLb": 3.0,
+    "Cost": "1 GP",
+    "PropertiesJson": "{\"weaponType\": \"Simple Melee\", \"damage\": \"1d6 Piercing\", \"properties\": \"Thrown (Range 20/60), Versatile (1d8)\", \"mastery\": \"Sap\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Dart",
+    "Category": "Weapon",
+    "WeightLb": 1.0,
+    "Cost": "5 CP",
+    "PropertiesJson": "{\"weaponType\": \"Simple Ranged\", \"damage\": \"1d4 Piercing\", \"properties\": \"Finesse, Thrown (Range 20/60)\", \"mastery\": \"Vex\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Light Crossbow",
+    "Category": "Weapon",
+    "WeightLb": 5.0,
+    "Cost": "25 GP",
+    "PropertiesJson": "{\"weaponType\": \"Simple Ranged\", \"damage\": \"1d8 Piercing\", \"properties\": \"Ammunition (Range 80/320; Bolt), Loading, Two-Handed\", \"mastery\": \"Slow\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Shortbow",
+    "Category": "Weapon",
+    "WeightLb": 2.0,
+    "Cost": "25 GP",
+    "PropertiesJson": "{\"weaponType\": \"Simple Ranged\", \"damage\": \"1d6 Piercing\", \"properties\": \"Ammunition (Range 80/320; Arrow), Two-Handed\", \"mastery\": \"Vex\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Sling",
+    "Category": "Weapon",
+    "WeightLb": null,
+    "Cost": "1 SP",
+    "PropertiesJson": "{\"weaponType\": \"Simple Ranged\", \"damage\": \"1d4 Bludgeoning\", \"properties\": \"Ammunition (Range 30/120; Bullet)\", \"mastery\": \"Slow\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Battleaxe",
+    "Category": "Weapon",
+    "WeightLb": 4.0,
+    "Cost": "10 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"1d8 Slashing\", \"properties\": \"Versatile (1d10)\", \"mastery\": \"Topple\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Flail",
+    "Category": "Weapon",
+    "WeightLb": 2.0,
+    "Cost": "10 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"1d8 Bludgeoning\", \"properties\": \"—\", \"mastery\": \"Sap\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Glaive",
+    "Category": "Weapon",
+    "WeightLb": 6.0,
+    "Cost": "20 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"1d10 Slashing\", \"properties\": \"Heavy, Reach, Two-Handed\", \"mastery\": \"Graze\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Greataxe",
+    "Category": "Weapon",
+    "WeightLb": 7.0,
+    "Cost": "30 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"1d12 Slashing\", \"properties\": \"Heavy, Two-Handed\", \"mastery\": \"Cleave\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Greatsword",
+    "Category": "Weapon",
+    "WeightLb": 6.0,
+    "Cost": "50 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"2d6 Slashing\", \"properties\": \"Heavy, Two-Handed\", \"mastery\": \"Graze\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Halberd",
+    "Category": "Weapon",
+    "WeightLb": 6.0,
+    "Cost": "20 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"1d10 Slashing\", \"properties\": \"Heavy, Reach, Two-Handed\", \"mastery\": \"Cleave\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Lance",
+    "Category": "Weapon",
+    "WeightLb": 6.0,
+    "Cost": "10 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"1d10 Piercing\", \"properties\": \"Heavy, Reach, Two-Handed (unless mounted)\", \"mastery\": \"Topple\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Longsword",
+    "Category": "Weapon",
+    "WeightLb": 3.0,
+    "Cost": "15 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"1d8 Slashing\", \"properties\": \"Versatile (1d10)\", \"mastery\": \"Sap\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Maul",
+    "Category": "Weapon",
+    "WeightLb": 10.0,
+    "Cost": "10 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"2d6 Bludgeoning\", \"properties\": \"Heavy, Two-Handed\", \"mastery\": \"Topple\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Morningstar",
+    "Category": "Weapon",
+    "WeightLb": 4.0,
+    "Cost": "15 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"1d8 Piercing\", \"properties\": \"—\", \"mastery\": \"Sap\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Pike",
+    "Category": "Weapon",
+    "WeightLb": 18.0,
+    "Cost": "5 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"1d10 Piercing\", \"properties\": \"Heavy, Reach, Two-Handed\", \"mastery\": \"Push\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Rapier",
+    "Category": "Weapon",
+    "WeightLb": 2.0,
+    "Cost": "25 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"1d8 Piercing\", \"properties\": \"Finesse\", \"mastery\": \"Vex\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Scimitar",
+    "Category": "Weapon",
+    "WeightLb": 3.0,
+    "Cost": "25 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"1d6 Slashing\", \"properties\": \"Finesse, Light\", \"mastery\": \"Nick\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Shortsword",
+    "Category": "Weapon",
+    "WeightLb": 2.0,
+    "Cost": "10 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"1d6 Piercing\", \"properties\": \"Finesse, Light\", \"mastery\": \"Vex\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Trident",
+    "Category": "Weapon",
+    "WeightLb": 4.0,
+    "Cost": "5 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"1d8 Piercing\", \"properties\": \"Thrown (Range 20/60), Versatile (1d10)\", \"mastery\": \"Topple\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Warhammer",
+    "Category": "Weapon",
+    "WeightLb": 5.0,
+    "Cost": "15 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"1d8 Bludgeoning\", \"properties\": \"Versatile (1d10)\", \"mastery\": \"Push\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "War Pick",
+    "Category": "Weapon",
+    "WeightLb": 2.0,
+    "Cost": "5 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"1d8 Piercing\", \"properties\": \"Versatile (1d10)\", \"mastery\": \"Sap\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Whip",
+    "Category": "Weapon",
+    "WeightLb": 3.0,
+    "Cost": "2 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Melee\", \"damage\": \"1d4 Slashing\", \"properties\": \"Finesse, Reach\", \"mastery\": \"Slow\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Blowgun",
+    "Category": "Weapon",
+    "WeightLb": 1.0,
+    "Cost": "10 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Ranged\", \"damage\": \"1 Piercing\", \"properties\": \"Ammunition (Range 25/100; Needle), Loading\", \"mastery\": \"Vex\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Hand Crossbow",
+    "Category": "Weapon",
+    "WeightLb": 3.0,
+    "Cost": "75 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Ranged\", \"damage\": \"1d6 Piercing\", \"properties\": \"Ammunition (Range 30/120; Bolt), Light, Loading\", \"mastery\": \"Vex\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Heavy Crossbow",
+    "Category": "Weapon",
+    "WeightLb": 18.0,
+    "Cost": "50 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Ranged\", \"damage\": \"1d10 Piercing\", \"properties\": \"Ammunition (Range 100/400; Bolt), Heavy, Loading, Two-Handed\", \"mastery\": \"Push\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Longbow",
+    "Category": "Weapon",
+    "WeightLb": 2.0,
+    "Cost": "50 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Ranged\", \"damage\": \"1d8 Piercing\", \"properties\": \"Ammunition (Range 150/600; Arrow), Heavy, Two-Handed\", \"mastery\": \"Slow\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Musket",
+    "Category": "Weapon",
+    "WeightLb": 10.0,
+    "Cost": "500 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Ranged\", \"damage\": \"1d12 Piercing\", \"properties\": \"Ammunition (Range 40/120; Bullet), Loading, Two-Handed\", \"mastery\": \"Slow\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Pistol",
+    "Category": "Weapon",
+    "WeightLb": 3.0,
+    "Cost": "250 GP",
+    "PropertiesJson": "{\"weaponType\": \"Martial Ranged\", \"damage\": \"1d10 Piercing\", \"properties\": \"Ammunition (Range 30/90; Bullet), Loading\", \"mastery\": \"Vex\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Padded Armor",
+    "Category": "Armor",
+    "WeightLb": 8.0,
+    "Cost": "5 GP",
+    "PropertiesJson": "{\"armorType\": \"Light Armor\", \"armorClass\": \"11 + Dex modifier\", \"strength\": \"—\", \"stealth\": \"Disadvantage\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Leather Armor",
+    "Category": "Armor",
+    "WeightLb": 10.0,
+    "Cost": "10 GP",
+    "PropertiesJson": "{\"armorType\": \"Light Armor\", \"armorClass\": \"11 + Dex modifier\", \"strength\": \"—\", \"stealth\": \"—\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Studded Leather Armor",
+    "Category": "Armor",
+    "WeightLb": 13.0,
+    "Cost": "45 GP",
+    "PropertiesJson": "{\"armorType\": \"Light Armor\", \"armorClass\": \"12 + Dex modifier\", \"strength\": \"—\", \"stealth\": \"—\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Hide Armor",
+    "Category": "Armor",
+    "WeightLb": 12.0,
+    "Cost": "10 GP",
+    "PropertiesJson": "{\"armorType\": \"Medium Armor\", \"armorClass\": \"12 + Dex modifier (max 2)\", \"strength\": \"—\", \"stealth\": \"—\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Chain Shirt",
+    "Category": "Armor",
+    "WeightLb": 20.0,
+    "Cost": "50 GP",
+    "PropertiesJson": "{\"armorType\": \"Medium Armor\", \"armorClass\": \"13 + Dex modifier (max 2)\", \"strength\": \"—\", \"stealth\": \"—\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Scale Mail",
+    "Category": "Armor",
+    "WeightLb": 45.0,
+    "Cost": "50 GP",
+    "PropertiesJson": "{\"armorType\": \"Medium Armor\", \"armorClass\": \"14 + Dex modifier (max 2)\", \"strength\": \"—\", \"stealth\": \"Disadvantage\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Breastplate",
+    "Category": "Armor",
+    "WeightLb": 20.0,
+    "Cost": "400 GP",
+    "PropertiesJson": "{\"armorType\": \"Medium Armor\", \"armorClass\": \"14 + Dex modifier (max 2)\", \"strength\": \"—\", \"stealth\": \"—\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Half Plate Armor",
+    "Category": "Armor",
+    "WeightLb": 40.0,
+    "Cost": "750 GP",
+    "PropertiesJson": "{\"armorType\": \"Medium Armor\", \"armorClass\": \"15 + Dex modifier (max 2)\", \"strength\": \"—\", \"stealth\": \"Disadvantage\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Ring Mail",
+    "Category": "Armor",
+    "WeightLb": 40.0,
+    "Cost": "30 GP",
+    "PropertiesJson": "{\"armorType\": \"Heavy Armor\", \"armorClass\": \"14\", \"strength\": \"—\", \"stealth\": \"Disadvantage\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Chain Mail",
+    "Category": "Armor",
+    "WeightLb": 55.0,
+    "Cost": "75 GP",
+    "PropertiesJson": "{\"armorType\": \"Heavy Armor\", \"armorClass\": \"16\", \"strength\": \"Str 13\", \"stealth\": \"Disadvantage\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Splint Armor",
+    "Category": "Armor",
+    "WeightLb": 60.0,
+    "Cost": "200 GP",
+    "PropertiesJson": "{\"armorType\": \"Heavy Armor\", \"armorClass\": \"17\", \"strength\": \"Str 15\", \"stealth\": \"Disadvantage\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Plate Armor",
+    "Category": "Armor",
+    "WeightLb": 65.0,
+    "Cost": "1,500 GP",
+    "PropertiesJson": "{\"armorType\": \"Heavy Armor\", \"armorClass\": \"18\", \"strength\": \"Str 15\", \"stealth\": \"Disadvantage\"}",
+    "RulesText": null
+  },
+  {
+    "Name": "Acid",
+    "Category": "Adventuring Gear",
+    "WeightLb": 1.0,
+    "Cost": "25 GP",
+    "PropertiesJson": null,
+    "RulesText": "When you take the Attack action, you can replace one of your attacks with throwing a vial of Acid. Target one creature or object you can see within 20 feet of yourself. The target must succeed on a Dexterity saving throw (DC 8 plus your Dexterity modifier and Proficiency Bonus) or take 2d6 Acid damage."
+  },
+  {
+    "Name": "Alchemist’s Fire",
+    "Category": "Adventuring Gear",
+    "WeightLb": 1.0,
+    "Cost": "50 GP",
+    "PropertiesJson": null,
+    "RulesText": null
+  },
+  {
+    "Name": "Ammunition",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "Varies",
+    "PropertiesJson": null,
+    "RulesText": "Ammunition is required by a weapon that has the Ammunition property. A weapon's description specifies the type of ammunition used by the weapon. The Ammunition table lists the different types and the amount you get when you buy them. The table also lists the item that is typically used to store each type; storage must be bought separately."
+  },
+  {
+    "Name": "Antitoxin",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "50 GP",
+    "PropertiesJson": null,
+    "RulesText": "As a Bonus Action, you can drink a vial of Antitoxin to gain Advantage on saving throws to avoid or end the Poisoned condition for 1 hour."
+  },
+  {
+    "Name": "Arcane Focus",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "Varies",
+    "PropertiesJson": null,
+    "RulesText": "An Arcane Focus takes one of the forms in the Arcane Focuses table and is bejeweled or carved to channel arcane magic. A Sorcerer, Warlock, or Wizard can use such an item as a Spellcasting Focus."
+  },
+  {
+    "Name": "Backpack",
+    "Category": "Adventuring Gear",
+    "WeightLb": 5.0,
+    "Cost": "2 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Backpack holds up to 30 pounds within 1 cubic foot. It can also serve as a saddlebag."
+  },
+  {
+    "Name": "Ball Bearings",
+    "Category": "Adventuring Gear",
+    "WeightLb": 2.0,
+    "Cost": "1 GP",
+    "PropertiesJson": null,
+    "RulesText": "As a Utilize action, you can spill Ball Bearings from their pouch. They spread to cover a level, 10-footsquare area within 10 feet of yourself. A creature that enters this area for the first time on a turn must succeed on a DC 10 Dexterity saving throw or have the Prone condition. It takes 10 minutes to recover the Ball Bearings."
+  },
+  {
+    "Name": "Barrel",
+    "Category": "Adventuring Gear",
+    "WeightLb": 70.0,
+    "Cost": "2 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Barrel holds up to 40 gallons of liquid or up to 4 cubic feet of dry goods."
+  },
+  {
+    "Name": "Basket",
+    "Category": "Adventuring Gear",
+    "WeightLb": 2.0,
+    "Cost": "4 SP",
+    "PropertiesJson": null,
+    "RulesText": "A Basket holds up to 40 pounds within 2 cubic feet."
+  },
+  {
+    "Name": "Bedroll",
+    "Category": "Adventuring Gear",
+    "WeightLb": 7.0,
+    "Cost": "1 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Bedroll sleeps one Small or Medium creature. While in a Bedroll, you automatically succeed on saving throws against extreme cold (see “Gameplay Toolbox”)."
+  },
+  {
+    "Name": "Bell",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "1 GP",
+    "PropertiesJson": null,
+    "RulesText": "When rung as a Utilize action, a Bell produces a sound that can be heard up to 60 feet away."
+  },
+  {
+    "Name": "Blanket",
+    "Category": "Adventuring Gear",
+    "WeightLb": 3.0,
+    "Cost": "5 SP",
+    "PropertiesJson": null,
+    "RulesText": "While wrapped in a blanket, you have Advantage on saving throws against extreme cold (see “Gameplay Toolbox”)."
+  },
+  {
+    "Name": "Block and Tackle",
+    "Category": "Adventuring Gear",
+    "WeightLb": 5.0,
+    "Cost": "1 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Block and Tackle allows you to hoist up to four times the weight you can normally lift."
+  },
+  {
+    "Name": "Book",
+    "Category": "Adventuring Gear",
+    "WeightLb": 5.0,
+    "Cost": "25 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Book contains fiction or nonfiction. If you consult an accurate nonfiction Book about its topic, you gain a +5 bonus to Intelligence (Arcana, History, Nature, or Religion) checks you make about that topic."
+  },
+  {
+    "Name": "Bottle, Glass",
+    "Category": "Adventuring Gear",
+    "WeightLb": 2.0,
+    "Cost": "2 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Glass Bottle holds up to 11/2 pints."
+  },
+  {
+    "Name": "Bucket",
+    "Category": "Adventuring Gear",
+    "WeightLb": 2.0,
+    "Cost": "5 CP",
+    "PropertiesJson": null,
+    "RulesText": "A Bucket holds up to half a cubic foot of contents."
+  },
+  {
+    "Name": "Burglar's Pack",
+    "Category": "Adventuring Gear",
+    "WeightLb": 42.0,
+    "Cost": "16 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Burglar's Pack contains the following items: Backpack, Ball Bearings, Bell, 10 Candles, Crowbar, Hooded Lantern, 7 flasks of Oil, 5 days of Rations, Rope, Tinderbox, and Waterskin."
+  },
+  {
+    "Name": "Caltrops",
+    "Category": "Adventuring Gear",
+    "WeightLb": 2.0,
+    "Cost": "1 GP",
+    "PropertiesJson": null,
+    "RulesText": "As a Utilize action, you can spread Caltrops from their bag to cover a 5-foot-square area within 5 feet of yourself. A creature that enters this area for the first time on a turn must succeed on a DC 15 Dexterity saving throw or take 1 Piercing damage and have its Speed reduced to 0 until the start of its next turn. It takes 10 minutes to recover the Caltrops."
+  },
+  {
+    "Name": "Candle",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "1 CP",
+    "PropertiesJson": null,
+    "RulesText": "For 1 hour, a lit Candle sheds Bright Light in a 5-foot radius and Dim Light for an additional 5 feet."
+  },
+  {
+    "Name": "Case, Crossbow Bolt",
+    "Category": "Adventuring Gear",
+    "WeightLb": 1.0,
+    "Cost": "1 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Crossbow Bolt Case holds up to 20 Bolts. Case, Map or Scroll (1 GP) A Map or Scroll Case holds up to 10 sheets of paper or 5 sheets of parchment."
+  },
+  {
+    "Name": "Case, Map or Scroll",
+    "Category": "Adventuring Gear",
+    "WeightLb": 1.0,
+    "Cost": "1 GP",
+    "PropertiesJson": null,
+    "RulesText": null
+  },
+  {
+    "Name": "Chain",
+    "Category": "Adventuring Gear",
+    "WeightLb": 10.0,
+    "Cost": "5 GP",
+    "PropertiesJson": null,
+    "RulesText": "As a Utilize action, you can wrap a Chain around an unwilling creature within 5 feet of yourself that has the Grappled, Incapacitated, or Restrained condition if you succeed on a DC 13 Strength (Athletics) check. If the creature's legs are bound, the creature has the Restrained condition until it escapes. Escaping the Chain requires the creature to make a successful DC 18 Dexterity (Acrobatics) check as an action. Bursting the Chain requires a successful DC 20 Strength (Athletics) check as an action."
+  },
+  {
+    "Name": "Chest",
+    "Category": "Adventuring Gear",
+    "WeightLb": 25.0,
+    "Cost": "5 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Chest holds up to 12 cubic feet of contents."
+  },
+  {
+    "Name": "Climber's Kit",
+    "Category": "Adventuring Gear",
+    "WeightLb": 12.0,
+    "Cost": "25 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Climber's Kit includes boot tips, gloves, pitons, and a harness. As a Utilize action, you can use the Climber's Kit to anchor yourself; when you do, you can't fall more than 25 feet from the anchor point, and you can't move more than 25 feet from there without undoing the anchor as a Bonus Action."
+  },
+  {
+    "Name": "Clothes, Fine",
+    "Category": "Adventuring Gear",
+    "WeightLb": 6.0,
+    "Cost": "15 GP",
+    "PropertiesJson": null,
+    "RulesText": "Fine Clothes are made of expensive fabrics and adorned with expertly crafted details. Some events and locations admit only people wearing these clothes."
+  },
+  {
+    "Name": "Clothes, Traveler's",
+    "Category": "Adventuring Gear",
+    "WeightLb": 4.0,
+    "Cost": "2 GP",
+    "PropertiesJson": null,
+    "RulesText": "Traveler's Clothes are resilient garments designed for travel in various environments."
+  },
+  {
+    "Name": "Component Pouch",
+    "Category": "Adventuring Gear",
+    "WeightLb": 2.0,
+    "Cost": "25 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Component Pouch is watertight and filled with compartments that hold all the free Material components of your spells."
+  },
+  {
+    "Name": "Costume",
+    "Category": "Adventuring Gear",
+    "WeightLb": 4.0,
+    "Cost": "5 GP",
+    "PropertiesJson": null,
+    "RulesText": "While wearing a Costume, you have Advantage on any ability check you make to impersonate the person or type of person it represents."
+  },
+  {
+    "Name": "Crowbar",
+    "Category": "Adventuring Gear",
+    "WeightLb": 5.0,
+    "Cost": "2 GP",
+    "PropertiesJson": null,
+    "RulesText": "Using a Crowbar gives you Advantage on Strength checks where the Crowbar's leverage can be applied."
+  },
+  {
+    "Name": "Diplomat's Pack",
+    "Category": "Adventuring Gear",
+    "WeightLb": 39.0,
+    "Cost": "39 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Diplomat's Pack contains the following items: Chest, Fine Clothes, Ink, 5 Ink Pens, Lamp, 2 Map or Scroll Cases, 4 flasks of Oil, 5 sheets of Paper, 5 sheets of Parchment, Perfume, and Tinderbox."
+  },
+  {
+    "Name": "Druidic Focus",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "Varies",
+    "PropertiesJson": null,
+    "RulesText": "A Druidic Focus takes one of the forms in the Druidic Focuses table and is carved, tied with ribbon, or painted to channel primal magic. A Druid or Ranger can use such an object as a Spellcasting Focus."
+  },
+  {
+    "Name": "Dungeoneer's Pack",
+    "Category": "Adventuring Gear",
+    "WeightLb": 55.0,
+    "Cost": "12 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Dungeoneer's Pack contains the following items: Backpack, Caltrops, Crowbar, 2 flasks of Oil, 10 days of Rations, Rope, Tinderbox, 10 Torches, and Waterskin."
+  },
+  {
+    "Name": "Entertainer's Pack",
+    "Category": "Adventuring Gear",
+    "WeightLb": 58.0,
+    "Cost": "40 GP",
+    "PropertiesJson": null,
+    "RulesText": "An Entertainer's Pack contains the following items: Backpack, Bedroll, Bell, Bullseye Lantern, 3 Costumes, Mirror, 8 flasks of Oil, 9 days of Rations, Tinderbox, and Waterskin."
+  },
+  {
+    "Name": "Explorer's Pack",
+    "Category": "Adventuring Gear",
+    "WeightLb": 55.0,
+    "Cost": "10 GP",
+    "PropertiesJson": null,
+    "RulesText": "An Explorer's Pack contains the following items: Backpack, Bedroll, 2 flasks of Oil, 10 days of Rations, Rope, Tinderbox, 10 Torches, and Waterskin."
+  },
+  {
+    "Name": "Flask",
+    "Category": "Adventuring Gear",
+    "WeightLb": 1.0,
+    "Cost": "2 CP",
+    "PropertiesJson": null,
+    "RulesText": "A Flask holds up to 1 pint."
+  },
+  {
+    "Name": "Grappling Hook",
+    "Category": "Adventuring Gear",
+    "WeightLb": 4.0,
+    "Cost": "2 GP",
+    "PropertiesJson": null,
+    "RulesText": "As a Utilize action, you can throw the Grappling Hook at a railing, a ledge, or another catch within 50 feet of yourself, and the hook catches on if you succeed on a DC 13 Dexterity (Acrobatics) check. If you tied a Rope to the hook, you can then climb it."
+  },
+  {
+    "Name": "Healer’s Kit",
+    "Category": "Adventuring Gear",
+    "WeightLb": 3.0,
+    "Cost": "5 GP",
+    "PropertiesJson": null,
+    "RulesText": null
+  },
+  {
+    "Name": "Holy Symbol",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "Varies",
+    "PropertiesJson": null,
+    "RulesText": "A Holy Symbol takes one of the forms in the Holy Symbol table and is bejeweled or painted to channel divine magic. A Cleric or Paladin can use a Holy Symbol as a Spellcasting Focus. The table indicates whether a Holy Symbol needs to be held, worn, or borne on fabric (such as a tabard or banner) or a Shield."
+  },
+  {
+    "Name": "Holy Water",
+    "Category": "Adventuring Gear",
+    "WeightLb": 1.0,
+    "Cost": "25 GP",
+    "PropertiesJson": null,
+    "RulesText": "When you take the Attack action, you can replace one of your attacks with throwing a flask of Holy Water. Target one creature you can see within 20 feet of yourself. The target must succeed on a Dexterity saving throw (DC 8 plus your Dexterity modifier and Proficiency Bonus) or take 2d8 Radiant damage if it is a Fiend or an Undead."
+  },
+  {
+    "Name": "Hunting Trap",
+    "Category": "Adventuring Gear",
+    "WeightLb": 25.0,
+    "Cost": "5 GP",
+    "PropertiesJson": null,
+    "RulesText": "As a Utilize action, you can set a Hunting Trap, which is a sawtooth steel ring that snaps shut when a creature steps on a pressure plate in the center. The trap is affixed by a heavy chain to an immobile object, such as a tree or a spike driven into the ground. A creature that steps on the plate must succeed on a DC 13 Dexterity saving throw or take 1d4 Piercing damage and have its Speed reduced to 0 until the start of its next turn. Thereafter, until the creature breaks free of the trap, its movement is limited by the length of the chain (typically 3 feet). A creature can use its action to make a DC 13 Strength (Athletics) check, freeing itself or another creature within its reach on a success. Each failed check deals 1 Piercing damage to the trapped creature."
+  },
+  {
+    "Name": "Ink",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "10 GP",
+    "PropertiesJson": null,
+    "RulesText": "Ink comes in a 1-ounce bottle, which provides enough ink to write about 500 pages."
+  },
+  {
+    "Name": "Ink Pen",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "2 CP",
+    "PropertiesJson": null,
+    "RulesText": "Using Ink, an Ink Pen is used to write or draw."
+  },
+  {
+    "Name": "Jug",
+    "Category": "Adventuring Gear",
+    "WeightLb": 4.0,
+    "Cost": "2 CP",
+    "PropertiesJson": null,
+    "RulesText": "A Jug holds up to 1 gallon."
+  },
+  {
+    "Name": "Ladder",
+    "Category": "Adventuring Gear",
+    "WeightLb": 25.0,
+    "Cost": "1 SP",
+    "PropertiesJson": null,
+    "RulesText": "A Ladder is 10 feet tall. You must climb to move up or down it."
+  },
+  {
+    "Name": "Lamp",
+    "Category": "Adventuring Gear",
+    "WeightLb": 1.0,
+    "Cost": "5 SP",
+    "PropertiesJson": null,
+    "RulesText": "A Lamp burns Oil as fuel to cast Bright Light in a 15 foot radius and Dim Light for an additional 30 feet."
+  },
+  {
+    "Name": "Lantern, Bullseye",
+    "Category": "Adventuring Gear",
+    "WeightLb": 2.0,
+    "Cost": "10 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Bullseye Lantern burns Oil as fuel to cast Bright Light in a 60-foot Cone and Dim Light for an additional 60 feet."
+  },
+  {
+    "Name": "Lantern, Hooded",
+    "Category": "Adventuring Gear",
+    "WeightLb": 2.0,
+    "Cost": "5 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Hooded Lantern burns Oil as fuel to cast Bright Light in a 30-foot radius and Dim Light for an additional 30 feet. As a Bonus Action, you can lower the hood, reducing the light to Dim Light in a 5-foot radius, or raise it again."
+  },
+  {
+    "Name": "Lock",
+    "Category": "Adventuring Gear",
+    "WeightLb": 1.0,
+    "Cost": "10 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Magnifying Glass grants Advantage on any ability check made to appraise or inspect a highly detailed item. Lighting a fire with a Magnifying Glass requires light as bright as sunlight to focus, tinder to ignite, and about 5 minutes for the fire to ignite."
+  },
+  {
+    "Name": "Magnifying Glass",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "100 GP",
+    "PropertiesJson": null,
+    "RulesText": null
+  },
+  {
+    "Name": "Manacles",
+    "Category": "Adventuring Gear",
+    "WeightLb": 6.0,
+    "Cost": "2 GP",
+    "PropertiesJson": null,
+    "RulesText": "As a Utilize action, you can use Manacles to bind an unwilling Small or Medium creature within 5 feet of yourself that has the Grappled, Incapacitated, or Restrained condition if you succeed on a DC 13 Dexterity (Sleight of Hand) check. While bound, a creature has Disadvantage on attack rolls, and the creature is Restrained if the Manacles are attached to a chain or hook that is fixed in place. Escaping the Manacles requires a successful DC 20 Dexterity (Sleight of Hand) check as an action. Bursting them requires a successful DC 25 Strength (Athletics) check as an action. Each set of Manacles comes with a key. Without the key, a creature can use Thieves' Tools to pick the Manacles' lock with a successful DC 15 Dexterity (Sleight of Hand) check."
+  },
+  {
+    "Name": "Map",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "1 GP",
+    "PropertiesJson": null,
+    "RulesText": "If you consult an accurate Map, you gain a +5 bonus to Wisdom (Survival) checks you make to find your way in the place represented on it."
+  },
+  {
+    "Name": "Mirror",
+    "Category": "Adventuring Gear",
+    "WeightLb": 1.0,
+    "Cost": "5 GP",
+    "PropertiesJson": null,
+    "RulesText": "A handheld steel Mirror is useful for personal cosmetics but also for peeking around corners and reflecting light as a signal."
+  },
+  {
+    "Name": "Net",
+    "Category": "Adventuring Gear",
+    "WeightLb": 3.0,
+    "Cost": "1 GP",
+    "PropertiesJson": null,
+    "RulesText": "When you take the Attack action, you can replace one of your attacks with throwing a Net. Target a creature you can see within 15 feet of yourself. The target must succeed on a Dexterity saving throw (DC 8 plus your Dexterity modifier and Proficiency Bonus) or have the Restrained condition until it escapes. The target succeeds automatically if it is Huge or larger. To escape, the target or a creature within 5 feet of it must take an action to make a DC 10 Strength (Athletics) check, freeing the Restrained creature on a success. Destroying the Net (AC 10; 5 HP; Immunity to Bludgeoning, Poison, and Psychic damage) also frees the target, ending the effect."
+  },
+  {
+    "Name": "Oil",
+    "Category": "Adventuring Gear",
+    "WeightLb": 1.0,
+    "Cost": "1 SP",
+    "PropertiesJson": null,
+    "RulesText": "You can douse a creature, object, or space with Oil or use it as fuel, as detailed below. Dousing a Creature or an Object. When you take the Attack action, you can replace one of your attacks with throwing an Oil flask. Target one creature or object within 20 feet of yourself. The target must succeed on a Dexterity saving throw (DC 8 plus your Dexterity modifier and Proficiency Bonus) or be covered in oil. If the target takes Fire damage before the oil dries (after 1 minute), the target takes an extra 5 Fire damage from burning oil. Dousing a Space. You can take the Utilize action to pour an Oil flask on level ground to cover a 5-foot-square area within 5 feet of yourself. If lit, the oil burns until the end of the turn 2 rounds from when the oil was lit (or 12 seconds) and deals 5 Fire damage to any creature that enters the area or ends its turn there. A creature can take this damage only once per turn. Fuel. Oil serves as fuel for Lamps and Lanterns. Once lit, a flask of Oil burns for 6 hours in a Lamp or Lantern. That duration doesn't need to be consecutive; you can extinguish the burning Oil (as a Utilize action) and rekindle it again until it has burned for a total of 6 hours."
+  },
+  {
+    "Name": "Paper",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "2 SP",
+    "PropertiesJson": null,
+    "RulesText": "One sheet of Paper can hold about 250 handwritten words."
+  },
+  {
+    "Name": "Parchment",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "1 SP",
+    "PropertiesJson": null,
+    "RulesText": "One sheet of Parchment can hold about 250 handwritten words."
+  },
+  {
+    "Name": "Perfume",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "5 GP",
+    "PropertiesJson": null,
+    "RulesText": "Perfume comes in a 4-ounce vial. For 1 hour after applying Perfume to yourself, you have Advantage on Charisma (Persuasion) checks made to influence an Indifferent Humanoid within 5 feet of yourself."
+  },
+  {
+    "Name": "Poison, Basic",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "100 GP",
+    "PropertiesJson": null,
+    "RulesText": "As a Bonus Action, you can use a vial of Basic Poison to coat one weapon or up to three pieces of ammunition. A creature that takes Piercing or Slashing damage from the poisoned weapon or ammunition takes an extra 1d4 Poison damage. Once applied, the poison retains potency for 1 minute or until its damage is dealt, whichever comes first."
+  },
+  {
+    "Name": "Pole",
+    "Category": "Adventuring Gear",
+    "WeightLb": 7.0,
+    "Cost": "5 CP",
+    "PropertiesJson": null,
+    "RulesText": "A Pole is 10 feet long. You can use it to touch something up to 10 feet away. If you must make a Strength (Athletics) check as part of a High or Long Jump, you can use the Pole to vault, giving yourself Advantage on the check."
+  },
+  {
+    "Name": "Pot, Iron",
+    "Category": "Adventuring Gear",
+    "WeightLb": 10.0,
+    "Cost": "2 GP",
+    "PropertiesJson": null,
+    "RulesText": "An Iron Pot holds up to 1 gallon."
+  },
+  {
+    "Name": "Potion of Healing",
+    "Category": "Adventuring Gear",
+    "WeightLb": 1.0,
+    "Cost": "50 GP",
+    "PropertiesJson": null,
+    "RulesText": "This potion is a magic item. As a Bonus Action, you can drink it or administer it to another creature within 5 feet of yourself. The creature that drinks the magical red fluid in this vial regains 2d4 + 2 Hit Points."
+  },
+  {
+    "Name": "Pouch",
+    "Category": "Adventuring Gear",
+    "WeightLb": 1.0,
+    "Cost": "5 SP",
+    "PropertiesJson": null,
+    "RulesText": "A Pouch holds up to 6 pounds within one-fifth of a cubic foot."
+  },
+  {
+    "Name": "Priest's Pack",
+    "Category": "Adventuring Gear",
+    "WeightLb": 29.0,
+    "Cost": "33 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Priest's Pack contains the following items: Backpack, Blanket, Holy Water, Lamp, 7 days of Rations, Robe, and Tinderbox."
+  },
+  {
+    "Name": "Quiver",
+    "Category": "Adventuring Gear",
+    "WeightLb": 1.0,
+    "Cost": "1 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Quiver holds up to 20 Arrows."
+  },
+  {
+    "Name": "Ram, Portable",
+    "Category": "Adventuring Gear",
+    "WeightLb": 35.0,
+    "Cost": "4 GP",
+    "PropertiesJson": null,
+    "RulesText": "You can use a Portable Ram to break down doors. When doing so, you gain a +4 bonus to the Strength check. One other character can help you use the ram, giving you Advantage on this check."
+  },
+  {
+    "Name": "Rations",
+    "Category": "Adventuring Gear",
+    "WeightLb": 2.0,
+    "Cost": "5 SP",
+    "PropertiesJson": null,
+    "RulesText": "Rations consist of travel-ready food, including jerky, dried fruit, hardtack, and nuts. See “Malnutrition” in “Rules Glossary” for the risks of not eating."
+  },
+  {
+    "Name": "Robe",
+    "Category": "Adventuring Gear",
+    "WeightLb": 4.0,
+    "Cost": "1 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Robe has vocational or ceremonial significance. Some events and locations admit only people wearing a Robe bearing certain colors or symbols."
+  },
+  {
+    "Name": "Rope",
+    "Category": "Adventuring Gear",
+    "WeightLb": 5.0,
+    "Cost": "1 GP",
+    "PropertiesJson": null,
+    "RulesText": "As a Utilize action, you can tie a knot with Rope if you succeed on a DC 10 Dexterity (Sleight of Hand) check. The Rope can be burst with a successful DC 20 Strength (Athletics) check. You can bind an unwilling creature with the Rope only if the creature has the Grappled, Incapacitated, or Restrained condition. If the creature's legs are bound, the creature has the Restrained condition until it escapes. Escaping the Rope requires the creature to make a successful DC 15 Dexterity (Acrobatics) check as an action."
+  },
+  {
+    "Name": "Sack",
+    "Category": "Adventuring Gear",
+    "WeightLb": 1.0,
+    "Cost": "1 CP",
+    "PropertiesJson": null,
+    "RulesText": "A Sack holds up to 30 pounds within 1 cubic foot."
+  },
+  {
+    "Name": "Scholar's Pack",
+    "Category": "Adventuring Gear",
+    "WeightLb": 22.0,
+    "Cost": "40 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Scholar's Pack contains the following items: Backpack, Book, Ink, Ink Pen, Lamp, 10 flasks of Oil, 10 sheets of Parchment, and Tinderbox."
+  },
+  {
+    "Name": "Shovel",
+    "Category": "Adventuring Gear",
+    "WeightLb": 5.0,
+    "Cost": "2 GP",
+    "PropertiesJson": null,
+    "RulesText": "Working for 1 hour, you can use a Shovel to dig a hole that is 5 feet on each side in soil or similar material."
+  },
+  {
+    "Name": "Signal Whistle",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "5 CP",
+    "PropertiesJson": null,
+    "RulesText": "When blown as a Utilize action, a Signal Whistle produces a sound that can be heard up to 600 feet away."
+  },
+  {
+    "Name": "Spell Scroll (Cantrip)",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "30 GP",
+    "PropertiesJson": null,
+    "RulesText": null
+  },
+  {
+    "Name": "Spell Scroll (Level 1)",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "50 GP",
+    "PropertiesJson": null,
+    "RulesText": null
+  },
+  {
+    "Name": "Spikes, Iron",
+    "Category": "Adventuring Gear",
+    "WeightLb": 5.0,
+    "Cost": "1 GP",
+    "PropertiesJson": null,
+    "RulesText": "Iron Spikes come in bundles of ten. As a Utilize action, you can use a blunt object, such as a Light Hammer, to hammer a spike into wood, earth, or a similar material. You can do so to jam a door shut or to then tie a Rope or Chain to the Spike."
+  },
+  {
+    "Name": "Spyglass",
+    "Category": "Adventuring Gear",
+    "WeightLb": 1.0,
+    "Cost": "1,000 GP",
+    "PropertiesJson": null,
+    "RulesText": "Objects viewed through a Spyglass are magnified to twice their size."
+  },
+  {
+    "Name": "String",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "1 SP",
+    "PropertiesJson": null,
+    "RulesText": "String is 10 feet long. You can tie a knot in it as a Utilize action."
+  },
+  {
+    "Name": "Tent",
+    "Category": "Adventuring Gear",
+    "WeightLb": 20.0,
+    "Cost": "2 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Tent sleeps up to two Small or Medium creatures."
+  },
+  {
+    "Name": "Tinderbox",
+    "Category": "Adventuring Gear",
+    "WeightLb": 1.0,
+    "Cost": "5 SP",
+    "PropertiesJson": null,
+    "RulesText": "A Tinderbox is a small container holding flint, fire steel, and tinder (usually dry cloth soaked in light oil) used to kindle a fire. Using it to light a Candle, Lamp, Lantern, or Torch—or anything else with exposed fuel—takes a Bonus Action. Lighting any other fire takes 1 minute."
+  },
+  {
+    "Name": "Torch",
+    "Category": "Adventuring Gear",
+    "WeightLb": 1.0,
+    "Cost": "1 CP",
+    "PropertiesJson": null,
+    "RulesText": "A Torch burns for 1 hour, casting Bright Light in a 20-foot radius and Dim Light for an additional 20 feet. When you take the Attack action, you can attack with the Torch, using it as a Simple Melee weapon. On a hit, the target takes 1 Fire damage."
+  },
+  {
+    "Name": "Vial",
+    "Category": "Adventuring Gear",
+    "WeightLb": null,
+    "Cost": "1 GP",
+    "PropertiesJson": null,
+    "RulesText": "A Vial holds up to 4 ounces."
+  },
+  {
+    "Name": "Waterskin",
+    "Category": "Adventuring Gear",
+    "WeightLb": 5.0,
+    "Cost": "2 SP",
+    "PropertiesJson": null,
+    "RulesText": "A Waterskin holds up to 4 pints. If you don't drink sufficient water, you risk dehydration (see “Rules Glossary”)."
+  },
+  {
+    "Name": "Alchemist's Supplies",
+    "Category": "Tool",
+    "WeightLb": 8.0,
+    "Cost": "50 GP",
+    "PropertiesJson": "{\"ability\": \"Intelligence\"}",
+    "RulesText": "Ability: Intelligence. Utilize: Identify a substance (DC 15), or start a fire (DC 15). Craft: Acid, Alchemist's Fire, Component Pouch, Oil, Paper, Perfume."
+  },
+  {
+    "Name": "Brewer's Supplies",
+    "Category": "Tool",
+    "WeightLb": 9.0,
+    "Cost": "20 GP",
+    "PropertiesJson": "{\"ability\": \"Intelligence\"}",
+    "RulesText": "Ability: Intelligence. Utilize: Detect poisoned drink (DC 15), or identify alcohol (DC 10). Craft: Antitoxin."
+  },
+  {
+    "Name": "Calligrapher's Supplies",
+    "Category": "Tool",
+    "WeightLb": 5.0,
+    "Cost": "10 GP",
+    "PropertiesJson": "{\"ability\": \"Dexterity\"}",
+    "RulesText": "Ability: Dexterity. Utilize: Write text with impressive flourishes that guard against forgery (DC 15). Craft: Ink, Spell Scroll."
+  },
+  {
+    "Name": "Carpenter's Tools",
+    "Category": "Tool",
+    "WeightLb": 6.0,
+    "Cost": "8 GP",
+    "PropertiesJson": "{\"ability\": \"Strength\"}",
+    "RulesText": "Ability: Strength. Utilize: Seal or pry open a door or container (DC 20). Craft: Club, Greatclub, Quarterstaff, Barrel, Chest, Ladder, Pole, Portable Ram, Torch."
+  },
+  {
+    "Name": "Cartographer's Tools",
+    "Category": "Tool",
+    "WeightLb": 6.0,
+    "Cost": "15 GP",
+    "PropertiesJson": "{\"ability\": \"Wisdom\"}",
+    "RulesText": "Ability: Wisdom. Utilize: Draft a map of a small area (DC 15). Craft: Map."
+  },
+  {
+    "Name": "Cobbler's Tools",
+    "Category": "Tool",
+    "WeightLb": 5.0,
+    "Cost": "5 GP",
+    "PropertiesJson": "{\"ability\": \"Dexterity\"}",
+    "RulesText": "Ability: Dexterity. Utilize: Modify footwear to give Advantage on the wearer's next Dexterity (Acrobatics) check (DC 10). Craft: Climber's Kit."
+  },
+  {
+    "Name": "Cook's Utensils",
+    "Category": "Tool",
+    "WeightLb": 8.0,
+    "Cost": "1 GP",
+    "PropertiesJson": "{\"ability\": \"Wisdom\"}",
+    "RulesText": "Ability: Wisdom. Utilize: Improve food's flavor (DC 10), or detect spoiled or poisoned food (DC 15). Craft: Rations."
+  },
+  {
+    "Name": "Glassblower's Tools",
+    "Category": "Tool",
+    "WeightLb": 5.0,
+    "Cost": "30 GP",
+    "PropertiesJson": "{\"ability\": \"Intelligence\"}",
+    "RulesText": "Ability: Intelligence. Utilize: Discern what a glass object held in the past 24 hours (DC 15). Craft: Glass Bottle, Magnifying Glass, Spyglass, Vial."
+  },
+  {
+    "Name": "Jeweler's Tools",
+    "Category": "Tool",
+    "WeightLb": 2.0,
+    "Cost": "25 GP",
+    "PropertiesJson": "{\"ability\": \"Intelligence\"}",
+    "RulesText": "Ability: Intelligence. Utilize: Discern a gem's value (DC 15). Craft: Arcane Focus, Holy Symbol."
+  },
+  {
+    "Name": "Leatherworker's Tools",
+    "Category": "Tool",
+    "WeightLb": 5.0,
+    "Cost": "5 GP",
+    "PropertiesJson": "{\"ability\": \"Dexterity\"}",
+    "RulesText": "Ability: Dexterity. Utilize: Add a design to a leather item (DC 10). Craft: Sling, Whip, Hide Armor, Leather Armor, Studded Leather Armor, Backpack, Crossbow Bolt Case, Map or Scroll Case, Parchment, Pouch, Quiver, Waterskin."
+  },
+  {
+    "Name": "Mason's Tools",
+    "Category": "Tool",
+    "WeightLb": 8.0,
+    "Cost": "10 GP",
+    "PropertiesJson": "{\"ability\": \"Strength\"}",
+    "RulesText": "Ability: Strength. Utilize: Chisel a symbol or hole in stone (DC 10). Craft: Block and Tackle."
+  },
+  {
+    "Name": "Painter's Supplies",
+    "Category": "Tool",
+    "WeightLb": 5.0,
+    "Cost": "10 GP",
+    "PropertiesJson": "{\"ability\": \"Wisdom\"}",
+    "RulesText": "Ability: Wisdom. Utilize: Paint a recognizable image of something you've seen (DC 10). Craft: Druidic Focus, Holy Symbol."
+  },
+  {
+    "Name": "Potter's Tools",
+    "Category": "Tool",
+    "WeightLb": 3.0,
+    "Cost": "10 GP",
+    "PropertiesJson": "{\"ability\": \"Intelligence\"}",
+    "RulesText": "Ability: Intelligence. Utilize: Discern what a ceramic object held in the past 24 hours (DC 15). Craft: Jug, Lamp."
+  },
+  {
+    "Name": "Smith's Tools",
+    "Category": "Tool",
+    "WeightLb": 8.0,
+    "Cost": "20 GP",
+    "PropertiesJson": "{\"ability\": \"Strength\"}",
+    "RulesText": "Ability: Strength. Utilize: Pry open a door or container (DC 20). Craft: Any Melee weapon (except Club, Greatclub, Quarterstaff, and Whip), Medium armor (except Hide), Heavy armor, Ball Bearings, Bucket, Caltrops, Chain, Crowbar, Firearm Bullets, Grappling Hook, Iron Pot, Iron Spikes, Sling Bullets."
+  },
+  {
+    "Name": "Tinker's Tools",
+    "Category": "Tool",
+    "WeightLb": 10.0,
+    "Cost": "50 GP",
+    "PropertiesJson": "{\"ability\": \"Dexterity\"}",
+    "RulesText": "Ability: Dexterity. Utilize: Assemble a Tiny item composed of scrap, which falls apart in 1 minute (DC 20). Craft: Musket, Pistol, Bell, Bullseye Lantern, Flask, Hooded Lantern, Hunting Trap, Lock, Manacles, Mirror, Shovel, Signal Whistle, Tinderbox."
+  },
+  {
+    "Name": "Weaver's Tools",
+    "Category": "Tool",
+    "WeightLb": 5.0,
+    "Cost": "1 GP",
+    "PropertiesJson": "{\"ability\": \"Dexterity\"}",
+    "RulesText": "Ability: Dexterity. Utilize: Mend a tear in clothing (DC 10), or sew a Tiny design (DC 10). Craft: Padded Armor, Basket, Bedroll, Blanket, Fine Clothes, Net, Robe, Rope, Sack, String, Tent, Traveler's Clothes."
+  },
+  {
+    "Name": "Woodcarver's Tools",
+    "Category": "Tool",
+    "WeightLb": 5.0,
+    "Cost": "1 GP",
+    "PropertiesJson": "{\"ability\": \"Dexterity\"}",
+    "RulesText": "Ability: Dexterity. Utilize: Carve a pattern in wood (DC 10). Craft: Club, Greatclub, Quarterstaff, Ranged weapons (except Pistol, Musket, and Sling), Arcane Focus, Arrows, Bolts, Druidic Focus, Ink Pen, Needles."
+  },
+  {
+    "Name": "Disguise Kit",
+    "Category": "Tool",
+    "WeightLb": 3.0,
+    "Cost": "25 GP",
+    "PropertiesJson": "{\"ability\": \"Charisma\"}",
+    "RulesText": "Ability: Charisma. Utilize: Apply makeup (DC 10). Craft: Costume."
+  },
+  {
+    "Name": "Forgery Kit",
+    "Category": "Tool",
+    "WeightLb": 5.0,
+    "Cost": "15 GP",
+    "PropertiesJson": "{\"ability\": \"Dexterity\"}",
+    "RulesText": "Ability: Dexterity. Utilize: Mimic 10 or fewer words of someone else's handwriting (DC 15), or duplicate a wax seal (DC 20)."
+  },
+  {
+    "Name": "Gaming Set",
+    "Category": "Tool",
+    "WeightLb": null,
+    "Cost": "Varies",
+    "PropertiesJson": "{\"ability\": \"Wisdom\"}",
+    "RulesText": "Ability: Wisdom. Utilize: Discern whether someone is cheating (DC 10), or win the game (DC 20)."
+  },
+  {
+    "Name": "Herbalism Kit",
+    "Category": "Tool",
+    "WeightLb": 3.0,
+    "Cost": "5 GP",
+    "PropertiesJson": "{\"ability\": \"Intelligence\"}",
+    "RulesText": "Ability: Intelligence. Utilize: Identify a plant (DC 10). Craft: Antitoxin, Candle, Healer's Kit, Potion of Healing."
+  },
+  {
+    "Name": "Musical Instrument",
+    "Category": "Tool",
+    "WeightLb": null,
+    "Cost": "Varies",
+    "PropertiesJson": "{\"ability\": \"Charisma\"}",
+    "RulesText": "Ability: Charisma. Utilize: Play a known tune (DC 10), or improvise a song (DC 15)."
+  },
+  {
+    "Name": "Navigator's Tools",
+    "Category": "Tool",
+    "WeightLb": 2.0,
+    "Cost": "25 GP",
+    "PropertiesJson": "{\"ability\": \"Wisdom\"}",
+    "RulesText": "Ability: Wisdom. Utilize: Plot a course (DC 10), or determine position by stargazing (DC 15)."
+  },
+  {
+    "Name": "Poisoner's Kit",
+    "Category": "Tool",
+    "WeightLb": 2.0,
+    "Cost": "50 GP",
+    "PropertiesJson": "{\"ability\": \"Intelligence\"}",
+    "RulesText": "Ability: Intelligence. Utilize: Detect a poisoned object (DC 10). Craft: Basic Poison."
+  },
+  {
+    "Name": "Thieves' Tools",
+    "Category": "Tool",
+    "WeightLb": 1.0,
+    "Cost": "25 GP",
+    "PropertiesJson": "{\"ability\": \"Dexterity\"}",
+    "RulesText": "Ability: Dexterity. Utilize: Pick a lock (DC 15), or disarm a trap (DC 15)."
+  }
+]

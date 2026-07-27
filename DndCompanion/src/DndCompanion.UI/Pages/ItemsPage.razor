@@ -1,0 +1,109 @@
+@page "/items"
+@using DndCompanion.Application.Abstractions
+@using DndCompanion.Domain.Entities
+@inject IRepository<Item> ItemRepository
+
+<PageTitle>Items</PageTitle>
+
+<div class="main__header">
+    <h1 class="main__title">Items</h1>
+    <p class="main__subtitle">@_allItems.Count items from the SRD 5.2 reference.</p>
+</div>
+
+<div class="toolbar">
+    <input class="search-input" type="search" placeholder="Search items..."
+           value="@_search" @oninput="OnSearchChanged" />
+</div>
+<div class="toolbar">
+    <button class="filter-chip @(_categoryFilter is null ? "active" : "")" @onclick="() => SetCategory(null)">All</button>
+    @foreach (var category in _categories)
+    {
+        <button class="filter-chip @(_categoryFilter == category ? "active" : "")" @onclick="() => SetCategory(category)">@category</button>
+    }
+</div>
+
+<div class="browse-layout">
+    <div class="list-panel">
+        <div class="result-count">@_filtered.Count of @_allItems.Count</div>
+        @if (_filtered.Count == 0)
+        {
+            <div class="empty-state">No items match your search.</div>
+        }
+        else
+        {
+            <div class="list">
+                @foreach (var item in _filtered)
+                {
+                    <button class="list-row @(item == _selected ? "selected" : "")" @onclick="() => Select(item)">
+                        <span class="list-row__name">@item.Name</span>
+                        <span class="list-row__meta">@item.Category@(item.Cost is not null ? $" · {item.Cost}" : "")</span>
+                        <span class="badge badge--srd">SRD</span>
+                    </button>
+                }
+            </div>
+        }
+    </div>
+
+    @if (_selected is not null)
+    {
+        <div class="detail-panel">
+            <div class="detail-panel__title">@_selected.Name</div>
+            <dl class="detail-panel__meta">
+                <div><dt>Category</dt> <dd>@_selected.Category</dd></div>
+                @if (_selected.WeightLb is not null)
+                {
+                    <div><dt>Weight</dt> <dd>@_selected.WeightLb lb.</dd></div>
+                }
+                @if (_selected.Cost is not null)
+                {
+                    <div><dt>Cost</dt> <dd>@_selected.Cost</dd></div>
+                }
+            </dl>
+            @if (_selected.RulesText is not null)
+            {
+                <div class="detail-panel__body">@_selected.RulesText</div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<Item> _allItems = [];
+    private List<Item> _filtered = [];
+    private List<string> _categories = [];
+    private Item? _selected;
+    private string _search = "";
+    private string? _categoryFilter;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var items = await ItemRepository.ListAsync();
+        _allItems = items.OrderBy(i => i.Category).ThenBy(i => i.Name).ToList();
+        _categories = _allItems.Select(i => i.Category).Distinct().OrderBy(c => c).ToList();
+        Filter();
+    }
+
+    private void Select(Item item) => _selected = item;
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        _search = e.Value?.ToString() ?? "";
+        Filter();
+    }
+
+    private void SetCategory(string? category)
+    {
+        _categoryFilter = category;
+        Filter();
+    }
+
+    private void Filter()
+    {
+        IEnumerable<Item> q = _allItems;
+        if (!string.IsNullOrWhiteSpace(_search))
+            q = q.Where(i => i.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
+        if (_categoryFilter is not null)
+            q = q.Where(i => i.Category == _categoryFilter);
+        _filtered = q.ToList();
+    }
+}

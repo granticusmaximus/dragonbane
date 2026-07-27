@@ -1,6 +1,7 @@
 using DndCompanion.Application.Abstractions;
 using DndCompanion.Infrastructure.Dice;
 using DndCompanion.Infrastructure.Persistence;
+using DndCompanion.Infrastructure.Srd;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,6 +14,8 @@ public static class DependencyInjection
     {
         services.AddDbContext<AppDbContext>(o => o.UseSqlite($"Data Source={sqlitePath}"));
         services.AddSingleton<IDiceRoller, DiceRoller>();
+        services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
+        services.AddScoped<SrdImporter>();
         // TODO: register ITranscriptionService (Whisper.net) and INoteStructurer (Ollama)
         //       in Phase 4/5.
         return services;
