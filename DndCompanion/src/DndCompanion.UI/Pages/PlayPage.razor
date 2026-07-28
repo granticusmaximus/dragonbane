@@ -349,12 +349,18 @@ else
     {
         // Delete child sets through their own repo explicitly rather than relying on the DB's
         // cascade alone, matching this codebase's established "always AddAsync/Remove per
-        // entity" discipline for client-generated-Guid-Id entities.
+        // entity" discipline for client-generated-Guid-Id entities. Each is re-fetched via
+        // GetAsync (tracked) rather than removed directly — see the comment in DeleteSet.
         foreach (var set in SetsIn(folder.Id))
-            DiceSetRepository.Remove(set);
+        {
+            var existingSet = await DiceSetRepository.GetAsync(set.Id);
+            if (existingSet is not null) DiceSetRepository.Remove(existingSet);
+        }
         await DiceSetRepository.SaveChangesAsync();
 
-        DiceSetFolderRepository.Remove(folder);
+        var existingFolder = await DiceSetFolderRepository.GetAsync(folder.Id);
+        if (existingFolder is null) return;
+        DiceSetFolderRepository.Remove(existingFolder);
         await DiceSetFolderRepository.SaveChangesAsync();
         await LoadDiceSetsAsync();
     }
@@ -387,7 +393,13 @@ else
 
     private async Task DeleteSet(DiceSet set)
     {
-        DiceSetRepository.Remove(set);
+        // Re-fetch via GetAsync (tracked) rather than removing the AsNoTracking() instance we
+        // already hold — that instance may not be the same CLR object EF is already tracking
+        // for this Id from an earlier AddAsync in this circuit, which throws an identity-
+        // conflict InvalidOperationException on Remove(). See CLAUDE.md's tracking gotcha.
+        var existing = await DiceSetRepository.GetAsync(set.Id);
+        if (existing is null) return;
+        DiceSetRepository.Remove(existing);
         await DiceSetRepository.SaveChangesAsync();
         await LoadDiceSetsAsync();
     }

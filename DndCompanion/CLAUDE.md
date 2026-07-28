@@ -32,7 +32,7 @@ Host's DI container is what wires `EfRepository<T>` in. This was violated once m
 (pages briefly injected `IDbContextFactory<AppDbContext>` directly) and corrected — watch for
 this regression if extending the UI layer.
 
-## Current state (Phases 1–8 done; Phases 9–10 planned, not started)
+## Current state (Phases 1–9 done; Phase 10 planned, not started)
 - Solution + all six projects wired up; `dotnet build` and `dotnet test` are green
   (net10.0, EF Core 10.0.10, ElectronNET.API 23.6.2, 64 passing tests).
 - Blazor `App`/`Routes` live in `DndCompanion.Host/Components` (thin — no page logic).
@@ -84,9 +84,17 @@ this regression if extending the UI layer.
   `.Include(c => c.Sessions.OrderBy(...))`) can silently stop reflecting the query's
   order once the collection is already tracked from an earlier write in the same
   circuit — sort client-side after loading instead, never rely on ordered Include for
-  anything that gets mutated and re-read within one session.
-- Every `<textarea>` must use `@bind:event="oninput"` explicitly — Blazor's default
-  `@bind` on a textarea fires on `onchange` (blur), so a button wired to
+  anything that gets mutated and re-read within one session. (3) `IRepository<T>.ListAsync()`
+  uses `AsNoTracking()` and returns fresh untracked instances every call, but `AddAsync()`
+  leaves its entity tracked for the rest of the circuit — calling `Remove()` directly on a
+  `ListAsync()`-sourced instance for a row created earlier in the same circuit throws an EF
+  identity-conflict `InvalidOperationException` (confirmed via a real circuit crash in Phase 9's
+  dice-set deletion). Fix: re-fetch via `GetAsync(id)` (tracked) immediately before `Remove()`
+  whenever the entity in hand came from `ListAsync()` rather than a tracked parent graph —
+  `BestiaryPage.DeleteEditing` already did this by coincidence; `PlayPage`'s dice-set/folder
+  deletion needed the same fix applied explicitly.
+- Every `<textarea>` **and plain `<input @bind="...">`** must use `@bind:event="oninput"`
+  explicitly — Blazor's default `@bind` fires on `onchange` (blur), so a button wired to
   `disabled="@string.IsNullOrWhiteSpace(_field)"` stays disabled until the user clicks
   away first, and typed text can be silently lost if a button is clicked before blur.
   Found and fixed across all 6 textareas in the app; watch for this on any new one.
@@ -175,6 +183,33 @@ this regression if extending the UI layer.
   provenance only, never re-read live, so editing a template later can't retroactively change
   HP for a monster already placed mid-fight. Applied the `@bind:event="oninput"` fix
   proactively on every new text input this phase introduced, per the gotcha found in Phase 7.
+- **Dice Sets & Folders** (Phase 9): new `DiceSetFolder` (per-`Character`, `Name`, `SortOrder`)
+  and `DiceSet` (per-folder, `Name`, `Expression` — validated via the existing
+  `DiceExpression.TryParse` live in the UI, never persisted unparseable). Plain generic
+  repos for both, no bespoke query needed. `PlayPage` gained a "Dice Sets" section: click a
+  set to roll it (populates the same results tray/"Log to session" flow the ability-check and
+  weapon buttons already use); "Roll All" per folder is the one genuinely different behavior —
+  it loops every set, rolls each, and immediately logs every result to the selected session in
+  one action (matching the verified Dice-Ex-Machina feature this phase was modeled on:
+  "roll all the dice in a folder with one tap"), rather than requiring an explicit Log click
+  per roll like single-set rolls do.
+  **Real bug found and fixed here** (not a test artifact — confirmed via the actual server-side
+  stack trace, which showed a live circuit crash): `IRepository<T>.ListAsync()` uses
+  `AsNoTracking()`, so entities it returns are fresh, untracked CLR instances on every call —
+  but `AddAsync()` leaves the entity it creates *tracked* for the rest of this Blazor Server
+  circuit's lifetime (the `AppDbContext` is circuit-scoped, not per-request — see the existing
+  gotcha above). Calling `Remove()` directly on a `ListAsync()`-sourced instance for a row that
+  was created earlier in the same circuit throws `InvalidOperationException: The instance of
+  entity type '...' cannot be tracked because another instance with the same key value... is
+  already being tracked` — because EF's identity map already holds a *different* CLR object for
+  that same Id from the original `AddAsync`. Fixed by re-fetching via `GetAsync(id)` (which uses
+  `FindAsync`, tracked, and correctly resolves to the identity-map instance) immediately before
+  every `Remove()` call in `PlayPage`'s dice-set/folder deletion — the exact pattern
+  `BestiaryPage.DeleteEditing` (Phase 8) already happened to follow, which is why Bestiary never
+  hit this. **This is a third, distinct EF/Blazor-Server gotcha for this codebase, alongside the
+  already-documented AddAsync-vs-collection-mutation and ordered-Include-staleness ones — any
+  future `Remove()` call on an entity obtained from `ListAsync()` (not from a tracked parent
+  graph) needs this same re-fetch-before-remove treatment.**
 - Whisper picks up ambient noise as short spurious phrases when there's no real
   speech (a known Whisper behavior on silence, not a bug) — no VAD/silence-gating is
   implemented, so expect noise in the transcript during quiet stretches. A future
@@ -248,9 +283,9 @@ this regression if extending the UI layer.
 7. ~~Initiative Tracker / Encounter Running (Encounter + Combatant, freeform NPCs, wires up
    the long-dead `ActionEntry.RoundNo`/`InitiativeSlot`)~~ ← done
 8. ~~Monster/NPC Builder & Bestiary (freeform, no SRD import)~~ ← done
-9. Dice Sets & Folders (saved reusable rolls, batch "roll all") ← next
-10. VTT: maps/tokens/fog-of-war, single-shared-screen model (owner-confirmed) — build last,
-    most novel infrastructure (first file-serving-outside-wwwroot, first JS interop)
+9. ~~Dice Sets & Folders (saved reusable rolls, batch "roll all")~~ ← done
+10. VTT: maps/tokens/fog-of-war, single-shared-screen model (owner-confirmed) — most novel
+    infrastructure (first file-serving-outside-wwwroot, first JS interop) ← next
 
 Phases 6–10 originated from the owner asking to add "most/all" features from six reference
 apps (a dice-roller site, D&D Beyond, three Android apps). Marketplace/subscriptions/forums/
