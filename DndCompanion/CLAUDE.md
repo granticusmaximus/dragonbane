@@ -32,9 +32,9 @@ Host's DI container is what wires `EfRepository<T>` in. This was violated once m
 (pages briefly injected `IDbContextFactory<AppDbContext>` directly) and corrected — watch for
 this regression if extending the UI layer.
 
-## Current state (Phases 1–5 done)
+## Current state (Phases 1–6 done; Phases 7–10 planned, not started)
 - Solution + all six projects wired up; `dotnet build` and `dotnet test` are green
-  (net10.0, EF Core 10.0.10, ElectronNET.API 23.6.2, 45 passing tests).
+  (net10.0, EF Core 10.0.10, ElectronNET.API 23.6.2, 57 passing tests).
 - Blazor `App`/`Routes` live in `DndCompanion.Host/Components` (thin — no page logic).
   `MainLayout` (sidebar nav: Campaigns/Characters/Spells/Items/Actions/Dice Roller) and
   all pages live in `DndCompanion.UI` (`Layout/MainLayout.razor`, `Pages/*.razor`).
@@ -131,6 +131,35 @@ this regression if extending the UI layer.
   speech (a known Whisper behavior on silence, not a bug) — no VAD/silence-gating is
   implemented, so expect noise in the transcript during quiet stretches. A future
   improvement, not required for this phase.
+- **Combat fundamentals** (Phase 6): `Character` gained HP (current/max/temp), AC, Speed,
+  an `InitiativeBonus` (additive to `DexMod`, never a full override — total initiative is
+  always `DexMod + InitiativeBonus`, computed at roll time, not stored), `SizeCategory`,
+  Alignment, per-skill proficiency/expertise (`Skill` `[Flags]` enum × two properties,
+  `ProficientSkills`/`ExpertSkills`), per-save proficiency (`Ability` `[Flags]` enum,
+  `ProficientSaves`), and spell slots (`SpellSlots` value object, 1–9, JSON column like
+  `Abilities`). Skill→governing-ability mapping lives in `Application/Rules/SkillCatalog.cs`
+  (fixed 5e mechanical structure, not proprietary text — safe to hardcode); modifier math in
+  `Application/Rules/SkillCalculator.cs` (unit tested). `CharacterSheetPage` gained Combat
+  (HP bar with damage/heal buttons — temp HP absorbs damage first, per the real 5e rule —
+  plus read-only AC/Speed/Size/computed Initiative/computed Passive Perception), Skills &
+  Saving Throws, and Spell Slots sections.
+  **Real EF Core gotcha hit and fixed here**: `HasDefaultValue()` on a `HasConversion`'d
+  property (enum-as-string or JSON-as-string) does NOT get its default value passed through
+  the converter by EF's migration generator unless you say so explicitly — generating the
+  migration without explicit `HasDefaultValue(...)` on `Size`/`ProficientSkills`/`ExpertSkills`/
+  `ProficientSaves`/`SpellSlots` silently produced `defaultValue: ""` for every one of them,
+  which would have thrown (`Enum.Parse("")` / invalid JSON) the moment an existing row
+  (Baloney Slim) was loaded after migrating. Caught before it ever touched the real DB by
+  reading the generated migration's `AddColumn` calls, not just trusting `dotnet ef migrations
+  add` to succeed. Also: `SizeCategory` was deliberately declared with `Medium` first (ordinal
+  0) so the CLR default and the intended DB default are the same value — otherwise EF's
+  default-value "sentinel" logic would silently overwrite an explicit `Tiny` (a real, valid
+  size) with `Medium` at save time, since `Tiny` would equal the CLR-default sentinel EF uses
+  to mean "unset". Applied cleanly against the real app-data DB; verified via a live Playwright
+  smoke test (HP damage/heal, skill-proficiency toggle, spell-slot edit, all round-tripping
+  correctly through a page reload) — then reset the arbitrary values the smoke test wrote onto
+  the real Baloney Slim character back to clean defaults afterward, same hygiene discipline as
+  every prior phase's verification data.
 - **Audio structuring** (Phase 5, on the same Recording page): `OllamaNoteStructurer`
   (`Infrastructure/Notes/`) implements `INoteStructurer` against a local, already-running
   `ollama serve` (default `http://localhost:11434`, model `llama3.2` — chosen by the owner
@@ -167,9 +196,21 @@ this regression if extending the UI layer.
 3. ~~Play view + dice: actions/equipment/spells + roller + ActionEntry log~~ ← done
 4. ~~Audio transcript: PortAudioSharp2 → Whisper.net → live transcript~~ ← done
 5. ~~Audio structuring: Ollama drafts notes; user confirms~~ ← done
+6. ~~Combat fundamentals: HP/AC/Speed/Initiative/skills/saves/spell slots on Character~~ ← done
+7. Initiative Tracker / Encounter Running (Encounter + Combatant, freeform NPCs, wires up
+   the long-dead `ActionEntry.RoundNo`/`InitiativeSlot`) ← next
+8. Monster/NPC Builder & Bestiary (freeform, no SRD import — depends on 7's Combatant shape)
+9. Dice Sets & Folders (saved reusable rolls, batch "roll all" — independent, can interleave)
+10. VTT: maps/tokens/fog-of-war, single-shared-screen model (owner-confirmed) — build last,
+    most novel infrastructure (first file-serving-outside-wwwroot, first JS interop)
 
-All five roadmap phases are built. No further phase is queued — next work should come
-from the owner (new feature request, bug, or polish pass) rather than an existing plan.
+Phases 6–10 originated from the owner asking to add "most/all" features from six reference
+apps (a dice-roller site, D&D Beyond, three Android apps). Marketplace/subscriptions/forums/
+Discord bot/proprietary rules content were explicitly scoped OUT (conflicts with the SRD-only
+rule below); a basic VTT was explicitly scoped IN. Full detail for phases 7–10 — exact entity
+shapes, migration names, which pages to extend vs. add — lives in the approved plan at
+`~/.claude/plans/reactive-stirring-dewdrop.md`; re-derive/update that plan when picking each
+one up rather than re-deciding the shape from scratch.
 
 ## Non-negotiable design decisions
 - **Rules are data, not code.** Every rules row carries a `ContentSource`

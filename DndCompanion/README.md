@@ -5,9 +5,10 @@ manage campaigns and characters, run the at-the-table loop (actions, equipment,
 spells, dice, action log), and — later — AI-assisted audio note-taking.
 
 Stack: **.NET 10 · ASP.NET Core + Blazor · SQLite/EF Core · Electron.NET**, in
-**Clean Architecture**. All five roadmap phases (reference/shell, campaigns/characters,
-play view + dice, audio transcript, Ollama note structuring) are built and running —
-see [CLAUDE.md](CLAUDE.md) for the detailed current state.
+**Clean Architecture**. Phases 1–6 (reference/shell, campaigns/characters, play view + dice,
+audio transcript, Ollama note structuring, combat fundamentals) are built and running;
+an Initiative Tracker, Bestiary, Dice Sets, and a basic VTT are planned next — see
+[CLAUDE.md](CLAUDE.md) for the detailed current state and roadmap.
 
 ## Layout
 ```
@@ -165,7 +166,19 @@ dotnet ef database update       -p src/DndCompanion.Infrastructure -s src/DndCom
 2. ~~**Campaigns & characters** — CRUD, character sheet, homebrew entry (Aasimar)~~ done
 3. ~~**Play view + dice** — actions/equipment/spells + dice roller + action log~~ done
 4. ~~**Audio: transcript** — PortAudioSharp2 → Whisper.net → live transcript~~ done
-5. ~~**Audio: structuring** — Ollama drafts notes you confirm~~ done — all phases complete
+5. ~~**Audio: structuring** — Ollama drafts notes you confirm~~ done
+6. ~~**Combat fundamentals** — HP/AC/Speed/Initiative/skills/saves/spell slots~~ done
+7. **Initiative Tracker** — encounter running, PCs + freeform NPCs, round/turn tracking ← next
+8. **Bestiary** — reusable freeform monster/NPC templates
+9. **Dice Sets & Folders** — saved reusable rolls, one-tap batch rolling
+10. **VTT** — maps, tokens, fog-of-war (single shared screen, DM-driven)
+
+## Character sheet: combat stats
+Each character now tracks HP (current/max/temp), AC, Speed, Initiative bonus, Size,
+proficiency/expertise on all 18 skills, saving-throw proficiencies, and spell slots
+(levels 1–9). The Combat section's HP field has quick damage/heal buttons — damage hits
+temp HP first, matching the real 5e rule. Skill and save modifiers are computed live from
+ability scores + proficiency bonus, never stored redundantly.
 
 ## Two things baked into the design
 - **Rules are data, not code.** Every rules row carries a `ContentSource`

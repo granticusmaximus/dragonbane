@@ -1,5 +1,6 @@
 @page "/characters/{Id:guid}"
 @using DndCompanion.Application.Abstractions
+@using DndCompanion.Application.Rules
 @using DndCompanion.Domain
 @using DndCompanion.Domain.Entities
 @using DndCompanion.Domain.ValueObjects
@@ -52,6 +53,21 @@ else
                 <div class="form-field"><label>Level</label><input type="number" min="1" max="20" @bind="_character.Level" /></div>
                 <div class="form-field"><label>Background</label><input @bind="_character.Background" /></div>
                 <div class="form-field"><label>Proficiency Bonus</label><input type="number" min="2" max="6" @bind="_character.ProficiencyBonus" /></div>
+                <div class="form-field"><label>Alignment</label><input @bind="_character.Alignment" /></div>
+                <div class="form-field">
+                    <label>Size</label>
+                    <select @bind="_character.Size">
+                        @foreach (var size in Enum.GetValues<SizeCategory>())
+                        {
+                            <option value="@size">@size</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-field"><label>Max HP</label><input type="number" min="0" @bind="_character.MaxHp" /></div>
+                <div class="form-field"><label>Temp HP</label><input type="number" min="0" @bind="_character.TempHp" /></div>
+                <div class="form-field"><label>Armor Class</label><input type="number" min="0" @bind="_character.ArmorClass" /></div>
+                <div class="form-field"><label>Speed (ft.)</label><input type="number" min="0" @bind="_character.Speed" /></div>
+                <div class="form-field"><label>Initiative Bonus</label><input type="number" @bind="_character.InitiativeBonus" /></div>
             </div>
             <div class="form-grid" style="margin-top: 12px;">
                 <div class="form-field"><label>Strength</label><input type="number" min="1" max="30" @bind="_editStr" /></div>
@@ -72,6 +88,39 @@ else
         }
     </div>
 
+    <!-- ===================== Combat ===================== -->
+    <div class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Combat</div>
+        </div>
+        <div class="form-grid">
+            <div class="form-field">
+                <label>Hit Points</label>
+                <div class="hp-display">
+                    <input type="number" min="0" max="@_character.MaxHp" value="@_character.CurrentHp" @onchange="e => SetCurrentHp(e)" />
+                    <span>/ @_character.MaxHp</span>
+                    @if (_character.TempHp > 0)
+                    {
+                        <span class="badge badge--homebrew">+@_character.TempHp temp</span>
+                    }
+                </div>
+            </div>
+            <div class="form-field">
+                <label>Adjust HP</label>
+                <div class="hp-display">
+                    <input type="number" min="1" @bind="_hpAdjustAmount" />
+                    <button class="btn btn-danger" @onclick="ApplyDamage">Damage</button>
+                    <button class="btn btn-primary" @onclick="ApplyHeal">Heal</button>
+                </div>
+            </div>
+            <div class="form-field"><label>Armor Class</label><div class="ability-card__score">@_character.ArmorClass</div></div>
+            <div class="form-field"><label>Speed</label><div class="ability-card__score">@_character.Speed ft.</div></div>
+            <div class="form-field"><label>Size</label><div class="ability-card__score">@_character.Size</div></div>
+            <div class="form-field"><label>Initiative</label><div class="ability-card__score">@FormatMod(ComputedInitiative)</div></div>
+            <div class="form-field"><label>Passive Perception</label><div class="ability-card__score">@ComputedPassivePerception</div></div>
+        </div>
+    </div>
+
     <div class="ability-grid">
         @foreach (var row in AbilityRows())
         {
@@ -81,6 +130,62 @@ else
                 <div class="ability-card__mod">@FormatMod(row.Mod)</div>
             </div>
         }
+    </div>
+
+    <!-- ===================== Skills & Saving Throws ===================== -->
+    <div class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Skills &amp; Saving Throws</div>
+        </div>
+        <div class="list">
+            @foreach (var skill in SkillCatalog.All)
+            {
+                var governingAbility = SkillCatalog.GoverningAbility[skill];
+                var proficient = _character.ProficientSkills.HasFlag(skill);
+                var expert = _character.ExpertSkills.HasFlag(skill);
+                var mod = SkillCalculator.Modifier(_character.Abilities, skill, _character.ProficiencyBonus, proficient, expert);
+                <div class="list-row">
+                    <span class="list-row__name">@skill</span>
+                    <span class="list-row__meta">@AbilityAbbreviation(governingAbility)</span>
+                    <label class="form-field--checkbox"><input type="checkbox" checked="@proficient" @onchange="e => ToggleSkillFlag(skill, isExpert: false, (bool)e.Value!)" /> Prof</label>
+                    <label class="form-field--checkbox"><input type="checkbox" checked="@expert" @onchange="e => ToggleSkillFlag(skill, isExpert: true, (bool)e.Value!)" /> Exp</label>
+                    <span class="list-row__meta">@FormatMod(mod)</span>
+                </div>
+            }
+        </div>
+        <div class="list" style="margin-top: 12px;">
+            @foreach (var ability in SavingThrowAbilities)
+            {
+                var proficient = _character.ProficientSaves.HasFlag(ability);
+                var mod = SkillCalculator.SavingThrowModifier(_character.Abilities, ability, _character.ProficiencyBonus, proficient);
+                <div class="list-row">
+                    <span class="list-row__name">@ability Save</span>
+                    <label class="form-field--checkbox"><input type="checkbox" checked="@proficient" @onchange="e => ToggleSaveFlag(ability, (bool)e.Value!)" /> Prof</label>
+                    <span class="list-row__meta">@FormatMod(mod)</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===================== Spell Slots ===================== -->
+    <div class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Spell Slots</div>
+        </div>
+        <div class="form-grid">
+            @for (var level = 1; level <= 9; level++)
+            {
+                var lvl = level;
+                <div class="form-field">
+                    <label>Level @lvl</label>
+                    <div class="hp-display">
+                        <input type="number" min="0" value="@_character.SpellSlots.CurrentAt(lvl)" @onchange="e => SetSlotCurrent(lvl, e)" />
+                        <span>/</span>
+                        <input type="number" min="0" value="@_character.SpellSlots.MaxAt(lvl)" @onchange="e => SetSlotMax(lvl, e)" />
+                    </div>
+                </div>
+            }
+        </div>
     </div>
 
     <!-- ===================== Equipment ===================== -->
@@ -311,9 +416,13 @@ else
 
     [Parameter] public Guid Id { get; set; }
 
+    private static readonly Ability[] SavingThrowAbilities =
+        [Ability.Strength, Ability.Dexterity, Ability.Constitution, Ability.Intelligence, Ability.Wisdom, Ability.Charisma];
+
     private Character? _character;
     private bool _editing;
     private int _editStr, _editDex, _editCon, _editInt, _editWis, _editCha;
+    private int _hpAdjustAmount = 1;
 
     private List<Item> _availableItems = [];
     private string _selectedItemId = "";
@@ -393,6 +502,78 @@ else
     }
 
     private static string FormatMod(int mod) => mod >= 0 ? $"+{mod}" : mod.ToString();
+
+    private static string AbilityAbbreviation(Ability ability) => ability switch
+    {
+        Ability.Strength => "STR", Ability.Dexterity => "DEX", Ability.Constitution => "CON",
+        Ability.Intelligence => "INT", Ability.Wisdom => "WIS", Ability.Charisma => "CHA",
+        _ => ability.ToString()
+    };
+
+    private int ComputedInitiative => _character is null ? 0 : _character.Abilities.DexMod + _character.InitiativeBonus;
+
+    private int ComputedPassivePerception => _character is null ? 10 : 10 + SkillCalculator.Modifier(
+        _character.Abilities, Skill.Perception, _character.ProficiencyBonus,
+        _character.ProficientSkills.HasFlag(Skill.Perception), _character.ExpertSkills.HasFlag(Skill.Perception));
+
+    // ---- Combat: HP ----
+    private async Task SetCurrentHp(ChangeEventArgs e)
+    {
+        if (_character is null || !int.TryParse(e.Value?.ToString(), out var value)) return;
+        _character.CurrentHp = Math.Clamp(value, 0, Math.Max(_character.MaxHp, 0));
+        await CharacterRepository.SaveChangesAsync();
+    }
+
+    private async Task ApplyDamage()
+    {
+        if (_character is null || _hpAdjustAmount <= 0) return;
+        var remaining = _hpAdjustAmount;
+        var absorbedByTemp = Math.Min(_character.TempHp, remaining);
+        _character.TempHp -= absorbedByTemp;
+        remaining -= absorbedByTemp;
+        _character.CurrentHp = Math.Max(0, _character.CurrentHp - remaining);
+        await CharacterRepository.SaveChangesAsync();
+    }
+
+    private async Task ApplyHeal()
+    {
+        if (_character is null || _hpAdjustAmount <= 0) return;
+        _character.CurrentHp = Math.Min(_character.MaxHp, _character.CurrentHp + _hpAdjustAmount);
+        await CharacterRepository.SaveChangesAsync();
+    }
+
+    // ---- Skills & Saves ----
+    private async Task ToggleSkillFlag(Skill skill, bool isExpert, bool value)
+    {
+        if (_character is null) return;
+        if (isExpert)
+            _character.ExpertSkills = value ? _character.ExpertSkills | skill : _character.ExpertSkills & ~skill;
+        else
+            _character.ProficientSkills = value ? _character.ProficientSkills | skill : _character.ProficientSkills & ~skill;
+        await CharacterRepository.SaveChangesAsync();
+    }
+
+    private async Task ToggleSaveFlag(Ability ability, bool value)
+    {
+        if (_character is null) return;
+        _character.ProficientSaves = value ? _character.ProficientSaves | ability : _character.ProficientSaves & ~ability;
+        await CharacterRepository.SaveChangesAsync();
+    }
+
+    // ---- Spell Slots ----
+    private async Task SetSlotCurrent(int level, ChangeEventArgs e)
+    {
+        if (_character is null || !int.TryParse(e.Value?.ToString(), out var value)) return;
+        _character.SpellSlots = _character.SpellSlots.WithCurrentAt(level, Math.Max(0, value));
+        await CharacterRepository.SaveChangesAsync();
+    }
+
+    private async Task SetSlotMax(int level, ChangeEventArgs e)
+    {
+        if (_character is null || !int.TryParse(e.Value?.ToString(), out var value)) return;
+        _character.SpellSlots = _character.SpellSlots.WithMaxAt(level, Math.Max(0, value));
+        await CharacterRepository.SaveChangesAsync();
+    }
 
     private static string SourceBadgeClass(ContentSource source) =>
         source.Kind == ContentKind.Srd ? "badge--srd" : "badge--homebrew";

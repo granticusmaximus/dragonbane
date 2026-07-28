@@ -439,6 +439,9 @@ button { cursor: pointer; }
 .form-field textarea { resize: vertical; min-height: 4rem; }
 .form-field--checkbox { flex-direction: row; align-items: center; }
 .form-field--checkbox input { width: auto; }
+
+.hp-display { display: flex; align-items: center; gap: var(--space-2); }
+.hp-display input[type="number"] { width: 70px; }
 .form-field--span-2 { grid-column: span 2; }
 .form-actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); }
 

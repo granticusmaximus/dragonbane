@@ -183,4 +183,67 @@ public class RepositoryTests : IDisposable
         Assert.Equal(19, roundTripped!.Total);
         Assert.Contains(entries, e => e.Source == EntrySource.Manual);
     }
+
+    [Fact]
+    public async Task Character_repository_round_trips_combat_stats_skill_flags_and_spell_slots()
+    {
+        var characterRepo = new EfCharacterRepository(_db);
+        var character = new Character
+        {
+            Name = "Baloney Slim",
+            Species = "Aasimar",
+            Class = "Druid",
+            CurrentHp = 18,
+            MaxHp = 24,
+            TempHp = 3,
+            ArmorClass = 15,
+            Speed = 25,
+            InitiativeBonus = 1,
+            Size = SizeCategory.Small,
+            Alignment = "Chaotic Good",
+            ProficientSkills = Skill.Athletics | Skill.Perception,
+            ExpertSkills = Skill.Perception,
+            ProficientSaves = Ability.Constitution | Ability.Wisdom,
+            SpellSlots = SpellSlots.Empty.WithCurrentAt(1, 2).WithMaxAt(1, 4).WithCurrentAt(2, 1).WithMaxAt(2, 2)
+        };
+        await characterRepo.AddAsync(character);
+        await characterRepo.SaveChangesAsync();
+
+        var reloaded = await characterRepo.GetAsync(character.Id);
+
+        Assert.NotNull(reloaded);
+        Assert.Equal(18, reloaded!.CurrentHp);
+        Assert.Equal(24, reloaded.MaxHp);
+        Assert.Equal(3, reloaded.TempHp);
+        Assert.Equal(15, reloaded.ArmorClass);
+        Assert.Equal(25, reloaded.Speed);
+        Assert.Equal(1, reloaded.InitiativeBonus);
+        Assert.Equal(SizeCategory.Small, reloaded.Size);
+        Assert.Equal("Chaotic Good", reloaded.Alignment);
+        Assert.Equal(Skill.Athletics | Skill.Perception, reloaded.ProficientSkills);
+        Assert.Equal(Skill.Perception, reloaded.ExpertSkills);
+        Assert.Equal(Ability.Constitution | Ability.Wisdom, reloaded.ProficientSaves);
+        Assert.Equal(2, reloaded.SpellSlots.CurrentAt(1));
+        Assert.Equal(4, reloaded.SpellSlots.MaxAt(1));
+        Assert.Equal(1, reloaded.SpellSlots.CurrentAt(2));
+        Assert.Equal(2, reloaded.SpellSlots.MaxAt(2));
+    }
+
+    [Fact]
+    public async Task Character_defaults_apply_on_insert_without_explicit_values()
+    {
+        var characterRepo = new EfCharacterRepository(_db);
+        var character = new Character { Name = "Fresh Character", Species = "Human", Class = "Fighter" };
+        await characterRepo.AddAsync(character);
+        await characterRepo.SaveChangesAsync();
+
+        var reloaded = await characterRepo.GetAsync(character.Id);
+
+        Assert.NotNull(reloaded);
+        Assert.Equal(10, reloaded!.ArmorClass);
+        Assert.Equal(30, reloaded.Speed);
+        Assert.Equal(SizeCategory.Medium, reloaded.Size);
+        Assert.Equal(Skill.None, reloaded.ProficientSkills);
+        Assert.Equal(Ability.None, reloaded.ProficientSaves);
+    }
 }
