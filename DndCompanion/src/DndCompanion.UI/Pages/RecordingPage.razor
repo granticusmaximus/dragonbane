@@ -8,6 +8,8 @@
 @inject IRepository<SessionLog> SessionLogRepository
 @inject IRepository<Recording> RecordingRepository
 @inject IRepository<TranscriptSegment> TranscriptSegmentRepository
+@inject IRepository<StructuredNote> StructuredNoteRepository
+@inject INoteStructurer NoteStructurer
 @inject IAppPaths AppPaths
 
 <PageTitle>Record — @(_session?.Title ?? "Session")</PageTitle>
@@ -45,6 +47,48 @@ else
 
     <div class="section-card">
         <div class="section-card__header">
+            <div class="section-card__title">Session Notes</div>
+            <button class="btn btn-ghost" @onclick="StructureNotesAsync" disabled="@(_structuring || _noteWindowBuffer.Count == 0)">
+                @(_structuring ? "Drafting…" : "Structure notes now")
+            </button>
+        </div>
+        <p class="list-row__meta">AI-drafted from the transcript via a local Ollama model — always a draft; edit or discard before confirming.</p>
+        @if (_draftNotes.Count == 0)
+        {
+            <div class="empty-state">No notes yet — drafted automatically every ~60s of speech, or click "Structure notes now".</div>
+        }
+        else
+        {
+            @foreach (var note in _draftNotes.OrderBy(n => n.TStart))
+            {
+                <div class="note-card @(note.Confirmed ? "note-card--confirmed" : "note-card--draft")">
+                    <div class="note-card__meta">
+                        <span class="badge badge--homebrew">@note.Kind</span>
+                        @if (!string.IsNullOrWhiteSpace(note.Subject))
+                        {
+                            <span class="note-card__subject">@note.Subject</span>
+                        }
+                        <span class="session-card__date">@FormatTime(note.TStart)</span>
+                    </div>
+                    @if (!note.Confirmed)
+                    {
+                        <textarea class="form-field" rows="2" @bind="note.Text" @bind:event="oninput"></textarea>
+                        <div class="toolbar">
+                            <button class="btn btn-primary" @onclick="() => ConfirmNoteAsync(note)">Confirm</button>
+                            <button class="btn btn-ghost" @onclick="() => DiscardNoteAsync(note)">Discard</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="session-card__notes">@note.Text</div>
+                    }
+                </div>
+            }
+        }
+    </div>
+
+    <div class="section-card">
+        <div class="section-card__header">
             <div class="section-card__title">Live Transcript</div>
         </div>
         @if (_liveSegments.Count == 0)
@@ -68,14 +112,19 @@ else
     [Parameter] public Guid SessionId { get; set; }
 
     private const int ChunkSampleThreshold = 16_000 * 10; // ~10s at 16kHz
+    private const int NoteWindowChunks = 6; // structure notes roughly every 6 audio chunks (~60s)
 
     private SessionLog? _session;
     private Recording? _recording;
     private bool _isRecording;
     private bool _transcribing;
+    private bool _structuring;
+    private int _chunksSinceLastNoteWindow;
     private readonly List<float> _allSamples = [];
     private readonly List<float> _chunkBuffer = [];
     private readonly List<TranscriptSegment> _liveSegments = [];
+    private readonly List<TranscriptSegment> _noteWindowBuffer = [];
+    private readonly List<StructuredNote> _draftNotes = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -110,6 +159,9 @@ else
         _allSamples.Clear();
         _chunkBuffer.Clear();
         _liveSegments.Clear();
+        _noteWindowBuffer.Clear();
+        _draftNotes.Clear();
+        _chunksSinceLastNoteWindow = 0;
         Recorder.Start();
         _isRecording = true;
     }
@@ -123,6 +175,8 @@ else
 
         if (_chunkBuffer.Count > 0)
             await TranscribeChunkAsync();
+        if (_noteWindowBuffer.Count > 0)
+            await StructureNotesAsync();
 
         var wavBytes = WavEncoder.EncodeMono16Bit(_allSamples, Recorder.SampleRate);
         var recordingsDir = Path.Combine(AppPaths.DataDirectory, "recordings");
@@ -163,6 +217,7 @@ else
                 };
                 await TranscriptSegmentRepository.AddAsync(segment);
                 _liveSegments.Add(segment);
+                _noteWindowBuffer.Add(segment);
             }
             await TranscriptSegmentRepository.SaveChangesAsync();
         }
@@ -170,6 +225,60 @@ else
         {
             _transcribing = false;
         }
+
+        _chunksSinceLastNoteWindow++;
+        if (_chunksSinceLastNoteWindow >= NoteWindowChunks && _noteWindowBuffer.Count > 0 && !_structuring)
+        {
+            await StructureNotesAsync();
+        }
+    }
+
+    private async Task StructureNotesAsync()
+    {
+        if (_recording is null || _noteWindowBuffer.Count == 0 || _structuring) return;
+
+        _structuring = true;
+        try
+        {
+            var windowText = string.Join('\n', _noteWindowBuffer.Select(s => $"[{s.TStart:F1}] {s.Text}"));
+            _noteWindowBuffer.Clear();
+            _chunksSinceLastNoteWindow = 0;
+
+            var drafts = await NoteStructurer.StructureAsync(windowText);
+            foreach (var draft in drafts)
+            {
+                var note = new StructuredNote
+                {
+                    RecordingId = _recording.Id,
+                    TStart = draft.TStart,
+                    Kind = draft.Kind,
+                    Subject = draft.Subject,
+                    Text = draft.Text,
+                    Confirmed = false
+                };
+                await StructuredNoteRepository.AddAsync(note);
+                _draftNotes.Add(note);
+            }
+            if (drafts.Count > 0)
+                await StructuredNoteRepository.SaveChangesAsync();
+        }
+        finally
+        {
+            _structuring = false;
+        }
+    }
+
+    private async Task ConfirmNoteAsync(StructuredNote note)
+    {
+        note.Confirmed = true;
+        await StructuredNoteRepository.SaveChangesAsync();
+    }
+
+    private async Task DiscardNoteAsync(StructuredNote note)
+    {
+        _draftNotes.Remove(note);
+        StructuredNoteRepository.Remove(note);
+        await StructuredNoteRepository.SaveChangesAsync();
     }
 
     private static string FormatTime(double seconds) => TimeSpan.FromSeconds(seconds).ToString(@"mm\:ss");

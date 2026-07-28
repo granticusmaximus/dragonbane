@@ -32,9 +32,9 @@ Host's DI container is what wires `EfRepository<T>` in. This was violated once m
 (pages briefly injected `IDbContextFactory<AppDbContext>` directly) and corrected — watch for
 this regression if extending the UI layer.
 
-## Current state (Phases 1–4 done; Phase 5 — Ollama note structuring — not started)
+## Current state (Phases 1–5 done)
 - Solution + all six projects wired up; `dotnet build` and `dotnet test` are green
-  (net10.0, EF Core 10.0.10, ElectronNET.API 23.6.2, 36 passing tests).
+  (net10.0, EF Core 10.0.10, ElectronNET.API 23.6.2, 45 passing tests).
 - Blazor `App`/`Routes` live in `DndCompanion.Host/Components` (thin — no page logic).
   `MainLayout` (sidebar nav: Campaigns/Characters/Spells/Items/Actions/Dice Roller) and
   all pages live in `DndCompanion.UI` (`Layout/MainLayout.razor`, `Pages/*.razor`).
@@ -131,6 +131,24 @@ this regression if extending the UI layer.
   speech (a known Whisper behavior on silence, not a bug) — no VAD/silence-gating is
   implemented, so expect noise in the transcript during quiet stretches. A future
   improvement, not required for this phase.
+- **Audio structuring** (Phase 5, on the same Recording page): `OllamaNoteStructurer`
+  (`Infrastructure/Notes/`) implements `INoteStructurer` against a local, already-running
+  `ollama serve` (default `http://localhost:11434`, model `llama3.2` — chosen by the owner
+  over larger/slower local models for this use case, since it runs repeatedly during a live
+  session). Uses Ollama's structured-output `format` (JSON Schema) to force a
+  `{"notes":[{kind, subject, text, tStart}]}` shape; response parsing is isolated in the
+  pure, unit-tested `NoteDraftJsonParser` (Application layer) so the HTTP plumbing in
+  Infrastructure stays thin. `RecordingPage` accumulates transcript segments into a rolling
+  window and structures every ~60s of audio (6 chunks) or on a manual "Structure notes
+  now" click, plus a final flush on Stop. Every draft is persisted immediately as a
+  `StructuredNote` row with `Confirmed = false` (never lost if the app closes mid-session);
+  the UI shows each draft with an editable text box and Confirm/Discard buttons — nothing
+  is ever auto-committed. If Ollama is unreachable or returns something unparseable,
+  `StructureAsync` degrades to an empty list rather than throwing — structuring is
+  assistive, never required for recording/transcription to keep working. **Verified against
+  the real local Ollama server** (not mocked): confirmed the model correctly categorizes
+  Action/Loot/Location notes with right timestamps AND correctly omits a filler/small-talk
+  line rather than fabricating a note for it.
 - **Fixed data-location bug**: DB/model/recordings previously keyed off
   `AppContext.BaseDirectory`, the build output folder — which differs between
   `dotnet run` (`bin/Debug/net10.0`) and `electronize start` (`obj/Host/bin`). Real
@@ -148,7 +166,10 @@ this regression if extending the UI layer.
 2. ~~Campaigns & characters: CRUD, character sheet, homebrew entry path~~ ← done
 3. ~~Play view + dice: actions/equipment/spells + roller + ActionEntry log~~ ← done
 4. ~~Audio transcript: PortAudioSharp2 → Whisper.net → live transcript~~ ← done
-5. Audio structuring: Ollama drafts notes; user confirms ← next
+5. ~~Audio structuring: Ollama drafts notes; user confirms~~ ← done
+
+All five roadmap phases are built. No further phase is queued — next work should come
+from the owner (new feature request, bug, or polish pass) rather than an existing plan.
 
 ## Non-negotiable design decisions
 - **Rules are data, not code.** Every rules row carries a `ContentSource`

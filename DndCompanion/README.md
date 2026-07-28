@@ -5,9 +5,9 @@ manage campaigns and characters, run the at-the-table loop (actions, equipment,
 spells, dice, action log), and — later — AI-assisted audio note-taking.
 
 Stack: **.NET 10 · ASP.NET Core + Blazor · SQLite/EF Core · Electron.NET**, in
-**Clean Architecture**. Phases 1–4 (reference/shell, campaigns/characters, play view
-+ dice, audio transcript) are built and running — see [CLAUDE.md](CLAUDE.md) for the
-detailed current state and roadmap.
+**Clean Architecture**. All five roadmap phases (reference/shell, campaigns/characters,
+play view + dice, audio transcript, Ollama note structuring) are built and running —
+see [CLAUDE.md](CLAUDE.md) for the detailed current state.
 
 ## Layout
 ```
@@ -128,6 +128,18 @@ the machine.
 - No voice-activity detection yet — Whisper will produce short spurious phrases
   from ambient noise during silence. Not a bug, just unfiltered.
 
+## Session note drafting (Ollama)
+The same Recording page drafts structured notes (Turn/Move/Action/Location/Loot/Other)
+from the transcript roughly every 60 seconds of speech, or on demand via "Structure
+notes now". Requires a local Ollama server running with the `llama3.2` model pulled:
+```bash
+ollama pull llama3.2   # once
+ollama serve            # if not already running as a background service
+```
+Every draft is editable and requires an explicit **Confirm** before it's treated as
+real — nothing from the model is auto-committed. If Ollama isn't running, drafting
+silently produces nothing; recording and transcription are unaffected.
+
 ## Where your data lives
 The SQLite DB, downloaded Whisper model, and recordings all live in one stable
 per-user directory — `~/Library/Application Support/DndCompanion/` on macOS —
@@ -153,7 +165,7 @@ dotnet ef database update       -p src/DndCompanion.Infrastructure -s src/DndCom
 2. ~~**Campaigns & characters** — CRUD, character sheet, homebrew entry (Aasimar)~~ done
 3. ~~**Play view + dice** — actions/equipment/spells + dice roller + action log~~ done
 4. ~~**Audio: transcript** — PortAudioSharp2 → Whisper.net → live transcript~~ done
-5. **Audio: structuring** — Ollama drafts notes you confirm  ← next
+5. ~~**Audio: structuring** — Ollama drafts notes you confirm~~ done — all phases complete
 
 ## Two things baked into the design
 - **Rules are data, not code.** Every rules row carries a `ContentSource`

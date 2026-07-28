@@ -1,6 +1,7 @@
 using DndCompanion.Application.Abstractions;
 using DndCompanion.Infrastructure.Audio;
 using DndCompanion.Infrastructure.Dice;
+using DndCompanion.Infrastructure.Notes;
 using DndCompanion.Infrastructure.Persistence;
 using DndCompanion.Infrastructure.Srd;
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +29,8 @@ public static class DependencyInjection
         // live for the app's lifetime, not per-request.
         services.AddSingleton<IAudioRecorder, PortAudioRecorder>();
         services.AddSingleton<ITranscriptionService>(_ => new WhisperTranscriptionService(whisperModelPath));
-        // TODO: register INoteStructurer (Ollama) in Phase 5.
+        // Assumes a local `ollama serve` already running with the model pulled — see README.
+        services.AddSingleton<INoteStructurer>(_ => new OllamaNoteStructurer());
         return services;
     }
 }
