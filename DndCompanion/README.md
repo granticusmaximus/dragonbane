@@ -128,9 +128,21 @@ the machine.
 - No voice-activity detection yet — Whisper will produce short spurious phrases
   from ambient noise during silence. Not a bug, just unfiltered.
 
+## Where your data lives
+The SQLite DB, downloaded Whisper model, and recordings all live in one stable
+per-user directory — `~/Library/Application Support/DndCompanion/` on macOS —
+**not** next to the built binary. Earlier builds used
+`AppContext.BaseDirectory`, which resolves to a different folder depending on
+launch method (`dotnet run` → `bin/Debug/net10.0`, `electronize start` →
+`obj/Host/bin`), so campaign data created in one mode silently didn't show up
+when launched the other way. Fixed via `IAppPaths` (`Infrastructure/AppPaths.cs`),
+injected wherever a persistent path is needed instead of each call site computing
+its own.
+
 ## EF Core migrations
-The `Initial` migration + local SQLite DB (`dndcompanion.db`, next to the built
-Host) are already created. To add a new migration after changing entities:
+The `Initial` migration is already created; the DB itself is created/migrated
+automatically on startup at the path above. To add a new migration after
+changing entities:
 ```bash
 dotnet ef migrations add <Name> -p src/DndCompanion.Infrastructure -s src/DndCompanion.Host
 dotnet ef database update       -p src/DndCompanion.Infrastructure -s src/DndCompanion.Host

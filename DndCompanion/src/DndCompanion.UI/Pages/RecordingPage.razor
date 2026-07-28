@@ -8,6 +8,7 @@
 @inject IRepository<SessionLog> SessionLogRepository
 @inject IRepository<Recording> RecordingRepository
 @inject IRepository<TranscriptSegment> TranscriptSegmentRepository
+@inject IAppPaths AppPaths
 
 <PageTitle>Record — @(_session?.Title ?? "Session")</PageTitle>
 
@@ -124,7 +125,7 @@ else
             await TranscribeChunkAsync();
 
         var wavBytes = WavEncoder.EncodeMono16Bit(_allSamples, Recorder.SampleRate);
-        var recordingsDir = Path.Combine(AppContext.BaseDirectory, "recordings");
+        var recordingsDir = Path.Combine(AppPaths.DataDirectory, "recordings");
         Directory.CreateDirectory(recordingsDir);
         var filePath = Path.Combine(recordingsDir, $"{_recording.Id}.wav");
         await File.WriteAllBytesAsync(filePath, wavBytes);

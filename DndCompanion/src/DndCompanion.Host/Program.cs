@@ -15,11 +15,14 @@ builder.WebHost.UseElectron(args);
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 
-// SQLite lives next to the app data — swap for a per-user path in production.
-var dbPath = Path.Combine(AppContext.BaseDirectory, "dndcompanion.db");
-// Downloaded on first use (see WhisperTranscriptionService) — not committed to the repo.
-var whisperModelPath = Path.Combine(AppContext.BaseDirectory, "models", "ggml-base.bin");
-builder.Services.AddInfrastructure(dbPath, whisperModelPath);
+// Stable per-user app data dir — NOT AppContext.BaseDirectory, which is the build output
+// folder and differs between `dotnet run` (bin/Debug/net10.0) and `electronize start`
+// (obj/Host/bin). DB, downloaded Whisper model, and recordings all live here so every
+// launch method sees the same data.
+var appDataDir = Path.Combine(
+    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+    "DndCompanion");
+builder.Services.AddInfrastructure(appDataDir);
 
 var app = builder.Build();
 

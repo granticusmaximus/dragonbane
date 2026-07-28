@@ -11,8 +11,13 @@ namespace DndCompanion.Infrastructure;
 public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
-        this IServiceCollection services, string sqlitePath, string whisperModelPath)
+        this IServiceCollection services, string dataDirectory)
     {
+        var appPaths = new AppPaths(dataDirectory);
+        var sqlitePath = Path.Combine(appPaths.DataDirectory, "dndcompanion.db");
+        var whisperModelPath = Path.Combine(appPaths.DataDirectory, "models", "ggml-base.bin");
+
+        services.AddSingleton<IAppPaths>(appPaths);
         services.AddDbContext<AppDbContext>(o => o.UseSqlite($"Data Source={sqlitePath}"));
         services.AddSingleton<IDiceRoller, DiceRoller>();
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));

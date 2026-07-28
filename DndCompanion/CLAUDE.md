@@ -131,6 +131,17 @@ this regression if extending the UI layer.
   speech (a known Whisper behavior on silence, not a bug) — no VAD/silence-gating is
   implemented, so expect noise in the transcript during quiet stretches. A future
   improvement, not required for this phase.
+- **Fixed data-location bug**: DB/model/recordings previously keyed off
+  `AppContext.BaseDirectory`, the build output folder — which differs between
+  `dotnet run` (`bin/Debug/net10.0`) and `electronize start` (`obj/Host/bin`). Real
+  campaign data created while testing one way was invisible when launched the other
+  way (looked like missing data, wasn't). Fixed with `IAppPaths` (Application
+  abstraction, `AppPaths` impl in Infrastructure) pointing at one stable per-user dir:
+  `~/Library/Application Support/DndCompanion/` on macOS. `Program.cs` and
+  `RecordingPage.razor` both consume it now instead of computing `BaseDirectory`
+  paths themselves. The real "Beyond the Blue Door" / Session Zero / Baloney Slim
+  data (previously stranded in the `bin/Debug` copy) was migrated into the new path;
+  the two stale build-output DB copies were deleted.
 
 ## Roadmap — build in usable slices, audio LAST
 1. ~~Reference + shell: SRD 5.2 import → browse/search rules, spells, items~~ ← done
