@@ -7,6 +7,7 @@
 @inject ICampaignRepository CampaignRepository
 @inject IRepository<Combatant> CombatantRepository
 @inject IRepository<ActionEntry> ActionEntryRepository
+@inject IRepository<MonsterTemplate> MonsterRepository
 @inject IDiceRoller DiceRoller
 @inject NavigationManager Nav
 
@@ -130,6 +131,32 @@ else
         <div class="form-actions">
             <button class="btn btn-primary" @onclick="AddNpcCombatant" disabled="@string.IsNullOrWhiteSpace(_npc.Name)">Add NPC/Monster</button>
         </div>
+
+        @if (_bestiary.Count > 0)
+        {
+            <div class="form-grid" style="margin-top: 12px;">
+                <div class="form-field">
+                    <label>From Bestiary</label>
+                    <select @bind="_selectedMonsterId">
+                        <option value="">Choose a monster...</option>
+                        @foreach (var m in _bestiary)
+                        {
+                            <option value="@m.Id">@m.Name (HP @m.HpMax, AC @m.ArmorClass)</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>Initiative</label>
+                    <div class="hp-display">
+                        <input type="number" @bind="_bestiaryInitiative" />
+                        <button class="btn btn-ghost" @onclick="RollBestiaryInitiative" disabled="@string.IsNullOrEmpty(_selectedMonsterId)">Roll</button>
+                    </div>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" @onclick="AddBestiaryCombatant" disabled="@string.IsNullOrEmpty(_selectedMonsterId)">Add from Bestiary</button>
+            </div>
+        }
     </div>
 
     <!-- ===================== Session Log ===================== -->
@@ -168,6 +195,10 @@ else
     private NpcForm _npc = new();
     private string _logText = "";
 
+    private List<MonsterTemplate> _bestiary = [];
+    private string _selectedMonsterId = "";
+    private int _bestiaryInitiative;
+
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
     private async Task LoadAsync()
@@ -182,6 +213,8 @@ else
             var alreadyAdded = _combatants.Where(c => c.CharacterId is not null).Select(c => c.CharacterId!.Value).ToHashSet();
             _availablePcs = _campaign.Characters.Select(cc => cc.Character).Where(c => !alreadyAdded.Contains(c.Id)).OrderBy(c => c.Name).ToList();
         }
+
+        _bestiary = (await MonsterRepository.ListAsync()).OrderBy(m => m.Name).ToList();
     }
 
     private void RollPcInitiative()
@@ -233,6 +266,41 @@ else
         await CombatantRepository.SaveChangesAsync();
 
         _npc = new NpcForm();
+        await LoadAsync();
+    }
+
+    private void RollBestiaryInitiative()
+    {
+        var monster = _bestiary.FirstOrDefault(m => m.Id.ToString() == _selectedMonsterId);
+        if (monster is null) return;
+        var result = DiceRoller.RollD20(monster.InitiativeBonus, label: "Initiative");
+        _bestiaryInitiative = result.Total;
+    }
+
+    private async Task AddBestiaryCombatant()
+    {
+        if (_encounter is null || string.IsNullOrEmpty(_selectedMonsterId) || !Guid.TryParse(_selectedMonsterId, out var monsterId)) return;
+        var monster = _bestiary.FirstOrDefault(m => m.Id == monsterId);
+        if (monster is null) return;
+
+        // Snapshot the template's stats — this is provenance only (MonsterTemplateId), never a
+        // live reference. Editing the template later must not retroactively change HP mid-fight
+        // for a combatant already placed in an encounter.
+        await CombatantRepository.AddAsync(new Combatant
+        {
+            EncounterId = _encounter.Id,
+            MonsterTemplateId = monster.Id,
+            Name = monster.Name,
+            InitiativeRoll = _bestiaryInitiative,
+            OrderIndex = _combatants.Count,
+            MaxHp = monster.HpMax,
+            CurrentHp = monster.HpMax,
+            ArmorClass = monster.ArmorClass
+        });
+        await CombatantRepository.SaveChangesAsync();
+
+        _selectedMonsterId = "";
+        _bestiaryInitiative = 0;
         await LoadAsync();
     }
 

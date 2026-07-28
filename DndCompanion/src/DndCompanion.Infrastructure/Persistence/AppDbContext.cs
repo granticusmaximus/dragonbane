@@ -21,6 +21,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<StructuredNote> StructuredNotes => Set<StructuredNote>();
     public DbSet<Encounter> Encounters => Set<Encounter>();
     public DbSet<Combatant> Combatants => Set<Combatant>();
+    public DbSet<MonsterTemplate> MonsterTemplates => Set<MonsterTemplate>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {

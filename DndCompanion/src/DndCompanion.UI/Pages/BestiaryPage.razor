@@ -1,0 +1,194 @@
+@page "/bestiary"
+@using DndCompanion.Application.Abstractions
+@using DndCompanion.Domain.Entities
+@inject IRepository<MonsterTemplate> MonsterRepository
+
+<PageTitle>Bestiary</PageTitle>
+
+<div class="main__header">
+    <h1 class="main__title">Bestiary</h1>
+    <p class="main__subtitle">@_all.Count freeform monster/NPC templates &mdash; reusable across encounters. No SRD monster compendium is imported; these are always DM-authored.</p>
+</div>
+
+<div class="toolbar">
+    <input class="search-input" type="search" placeholder="Search bestiary..."
+           value="@_search" @oninput="OnSearchChanged" />
+    <button class="btn btn-primary" @onclick="ShowNewForm">+ New Monster</button>
+</div>
+
+@if (_showForm)
+{
+    <div class="form-panel">
+        <div class="form-grid">
+            <div class="form-field"><label>Name</label><input @bind="_form.Name" @bind:event="oninput" /></div>
+            <div class="form-field"><label>Max HP</label><input type="number" min="0" @bind="_form.HpMax" /></div>
+            <div class="form-field"><label>Armor Class</label><input type="number" min="0" @bind="_form.ArmorClass" /></div>
+            <div class="form-field"><label>Initiative Bonus</label><input type="number" @bind="_form.InitiativeBonus" /></div>
+            <div class="form-field form-field--span-2"><label>Stat Block (attacks, abilities, notes)</label><textarea rows="6" @bind="_form.StatBlockText" @bind:event="oninput"></textarea></div>
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-primary" @onclick="SaveForm" disabled="@string.IsNullOrWhiteSpace(_form.Name)">@(_editingId is null ? "Create" : "Save")</button>
+            <button class="btn btn-ghost" @onclick="() => _showForm = false">Cancel</button>
+            @if (_editingId is not null)
+            {
+                <button class="btn btn-danger" @onclick="DeleteEditing">Delete</button>
+            }
+        </div>
+    </div>
+}
+
+<div class="browse-layout">
+    <div class="list-panel">
+        <div class="result-count">@_filtered.Count of @_all.Count</div>
+        @if (_filtered.Count == 0)
+        {
+            <div class="empty-state">No monsters yet. Create one above.</div>
+        }
+        else
+        {
+            <div class="list">
+                @foreach (var m in _filtered)
+                {
+                    <button class="list-row @(m == _selected ? "selected" : "")" @onclick="() => Select(m)">
+                        <span class="list-row__name">@m.Name</span>
+                        <span class="list-row__meta">HP @m.HpMax &middot; AC @m.ArmorClass</span>
+                        <span class="badge badge--homebrew">Homebrew</span>
+                    </button>
+                }
+            </div>
+        }
+    </div>
+
+    @if (_selected is not null)
+    {
+        <div class="detail-panel">
+            <div class="detail-panel__title">@_selected.Name</div>
+            <dl class="detail-panel__meta">
+                <div><dt>Max HP</dt> <dd>@_selected.HpMax</dd></div>
+                <div><dt>Armor Class</dt> <dd>@_selected.ArmorClass</dd></div>
+                <div><dt>Initiative Bonus</dt> <dd>@FormatMod(_selected.InitiativeBonus)</dd></div>
+            </dl>
+            @if (!string.IsNullOrWhiteSpace(_selected.StatBlockText))
+            {
+                <div class="detail-panel__body">@_selected.StatBlockText</div>
+            }
+            <div class="form-actions">
+                <button class="btn btn-ghost" @onclick="() => EditSelected(_selected)">Edit</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private sealed class MonsterForm
+    {
+        public string Name = "";
+        public int HpMax;
+        public int ArmorClass = 10;
+        public int InitiativeBonus;
+        public string? StatBlockText;
+    }
+
+    private List<MonsterTemplate> _all = [];
+    private List<MonsterTemplate> _filtered = [];
+    private MonsterTemplate? _selected;
+    private string _search = "";
+
+    private bool _showForm;
+    private Guid? _editingId;
+    private MonsterForm _form = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var all = await MonsterRepository.ListAsync();
+        _all = all.OrderBy(m => m.Name).ToList();
+        Filter();
+    }
+
+    private void Select(MonsterTemplate m) => _selected = m;
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        _search = e.Value?.ToString() ?? "";
+        Filter();
+    }
+
+    private void Filter()
+    {
+        IEnumerable<MonsterTemplate> q = _all;
+        if (!string.IsNullOrWhiteSpace(_search))
+            q = q.Where(m => m.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
+        _filtered = q.ToList();
+    }
+
+    private static string FormatMod(int mod) => mod >= 0 ? $"+{mod}" : mod.ToString();
+
+    private void ShowNewForm()
+    {
+        _editingId = null;
+        _form = new MonsterForm();
+        _showForm = true;
+    }
+
+    private void EditSelected(MonsterTemplate m)
+    {
+        _editingId = m.Id;
+        _form = new MonsterForm
+        {
+            Name = m.Name,
+            HpMax = m.HpMax,
+            ArmorClass = m.ArmorClass,
+            InitiativeBonus = m.InitiativeBonus,
+            StatBlockText = m.StatBlockText
+        };
+        _showForm = true;
+    }
+
+    private async Task SaveForm()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Name)) return;
+
+        if (_editingId is Guid id)
+        {
+            var existing = await MonsterRepository.GetAsync(id);
+            if (existing is null) return;
+            existing.Name = _form.Name.Trim();
+            existing.HpMax = _form.HpMax;
+            existing.ArmorClass = _form.ArmorClass;
+            existing.InitiativeBonus = _form.InitiativeBonus;
+            existing.StatBlockText = string.IsNullOrWhiteSpace(_form.StatBlockText) ? null : _form.StatBlockText.Trim();
+        }
+        else
+        {
+            var created = new MonsterTemplate
+            {
+                Name = _form.Name.Trim(),
+                HpMax = _form.HpMax,
+                ArmorClass = _form.ArmorClass,
+                InitiativeBonus = _form.InitiativeBonus,
+                StatBlockText = string.IsNullOrWhiteSpace(_form.StatBlockText) ? null : _form.StatBlockText.Trim()
+            };
+            await MonsterRepository.AddAsync(created);
+        }
+        await MonsterRepository.SaveChangesAsync();
+
+        _showForm = false;
+        await LoadAsync();
+    }
+
+    private async Task DeleteEditing()
+    {
+        if (_editingId is not Guid id) return;
+        var existing = await MonsterRepository.GetAsync(id);
+        if (existing is null) return;
+
+        MonsterRepository.Remove(existing);
+        await MonsterRepository.SaveChangesAsync();
+
+        if (_selected?.Id == id) _selected = null;
+        _showForm = false;
+        await LoadAsync();
+    }
+}

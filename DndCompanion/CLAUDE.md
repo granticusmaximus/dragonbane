@@ -32,9 +32,9 @@ Host's DI container is what wires `EfRepository<T>` in. This was violated once m
 (pages briefly injected `IDbContextFactory<AppDbContext>` directly) and corrected — watch for
 this regression if extending the UI layer.
 
-## Current state (Phases 1–6 done; Phases 7–10 planned, not started)
+## Current state (Phases 1–8 done; Phases 9–10 planned, not started)
 - Solution + all six projects wired up; `dotnet build` and `dotnet test` are green
-  (net10.0, EF Core 10.0.10, ElectronNET.API 23.6.2, 57 passing tests).
+  (net10.0, EF Core 10.0.10, ElectronNET.API 23.6.2, 64 passing tests).
 - Blazor `App`/`Routes` live in `DndCompanion.Host/Components` (thin — no page logic).
   `MainLayout` (sidebar nav: Campaigns/Characters/Spells/Items/Actions/Dice Roller) and
   all pages live in `DndCompanion.UI` (`Layout/MainLayout.razor`, `Pages/*.razor`).
@@ -127,6 +127,54 @@ this regression if extending the UI layer.
   Recording/TranscriptSegment rows and the .wav file afterward rather than leave
   incidentally-captured audio sitting in the user's real database — worth remembering
   if testing this feature again.
+- **Initiative Tracker / Encounter Running** (Phase 7): new `Encounter` (belongs to a
+  `SessionLog`, has `Status` Planned/Active/Completed, `CurrentRound`, `CurrentTurnIndex`) and
+  `Combatant` (belongs to an `Encounter`; either a linked PC via `CharacterId` or a freeform
+  NPC/monster via just `Name`; `OrderIndex` — not a query-time sort on `InitiativeRoll` — is
+  the authoritative turn order, explicitly reassigned by "Start Encounter"/"Re-sort by
+  Initiative" and freely adjustable via per-row Up/Down buttons, sidestepping the ordered-
+  Include staleness gotcha the same way `EfCampaignRepository` already does). No SRD monster
+  import — NPCs/monsters are freeform DM-entered stat lines (name/HP/AC/initiative), by
+  design; a full monster compendium is a separate large data-sourcing project, comparable in
+  scope to the original 321-spell import, not bundled here. `Application/Encounters/
+  TurnOrderCalculator.Advance(...)` is the one non-trivial pure logic (skip-defeated,
+  wrap-to-next-round, bounded to one lap so an all-defeated encounter can't loop forever) —
+  unit tested. `CampaignDetailPage` gained an Encounters section (same inline-create-form
+  pattern as Sessions); new `EncounterPage.razor`
+  (`/campaigns/{campaignId}/encounters/{id}`) is the actual runner: add PCs from the roster
+  (snapshotting HP/AC/`DexMod+InitiativeBonus` at add-time, with an optional `IDiceRoller`-
+  powered "Roll" button) or freeform NPCs, Start/Next Turn/End Encounter, per-combatant HP
+  set + conditions tag input + Defeated toggle, and a session-log text box. Logging from a
+  running encounter finally writes real values into `ActionEntry.RoundNo`/`InitiativeSlot` —
+  those columns existed since Phase 3 but had never had a writer until now.
+  **Real bug found and fixed here, broader than it first looked**: a plain `<input @bind="...">`
+  (not just `<textarea>`, which is the only case CLAUDE.md previously documented) also
+  defaults to Blazor's `onchange` bind event, not `oninput` — confirmed by a failing
+  Playwright test where `.fill()` visibly set the input's value but a `disabled="@string.
+  IsNullOrWhiteSpace(...)"` button bound to that same field never enabled, because `onchange`
+  only fires on blur and `.fill()` doesn't blur. In a real browser this can still bite a real
+  user: clicking a still-`disabled` button doesn't queue the click past the async Blazor
+  Server round-trip that would've enabled it, so a fast type-then-click can silently no-op.
+  Fixed on both new text inputs this phase introduced (`@bind:event="oninput"`, same fix as
+  the textarea gotcha). **Not yet fixed**: this same pattern likely exists on several
+  pre-existing text `<input>` fields from earlier phases (e.g. the homebrew quick-add forms
+  on `CharacterSheetPage`) — flagged as a known follow-up, out of scope for this phase.
+- **Monster/NPC Builder & Bestiary** (Phase 8): new `MonsterTemplate` (Name, HpMax,
+  ArmorClass, InitiativeBonus, freeform `StatBlockText`) — deliberately no `ContentSource`/
+  SRD tagging, unlike `Item`/`Spell`/`ActionDef`, since this is always DM-authored freeform
+  content by design (no monster compendium is imported). Uses the plain generic
+  `IRepository<MonsterTemplate>` — no bespoke repo needed, no deep-Include query, no
+  enum/JSON conversions to configure, so this was the simplest phase's EF surface so far.
+  New `/bestiary` page (nav link added to `MainLayout`) follows the existing browse-page
+  layout (`ItemsPage`'s search+list+detail-panel pattern) plus full CRUD via an inline
+  create/edit form (unlike Items/Spells/Actions, which are read-only browsers over imported
+  SRD content — the Bestiary *is* the authoring surface, so it needed Edit/Delete, not just
+  browse). `EncounterPage`'s Add Combatant toolbar gained a third "From Bestiary" option
+  (with the same `IDiceRoller`-powered "Roll" initiative button as the PC-from-roster path)
+  that snapshot-copies the template's stats into a new `Combatant` — `MonsterTemplateId` is
+  provenance only, never re-read live, so editing a template later can't retroactively change
+  HP for a monster already placed mid-fight. Applied the `@bind:event="oninput"` fix
+  proactively on every new text input this phase introduced, per the gotcha found in Phase 7.
 - Whisper picks up ambient noise as short spurious phrases when there's no real
   speech (a known Whisper behavior on silence, not a bug) — no VAD/silence-gating is
   implemented, so expect noise in the transcript during quiet stretches. A future
@@ -197,10 +245,10 @@ this regression if extending the UI layer.
 4. ~~Audio transcript: PortAudioSharp2 → Whisper.net → live transcript~~ ← done
 5. ~~Audio structuring: Ollama drafts notes; user confirms~~ ← done
 6. ~~Combat fundamentals: HP/AC/Speed/Initiative/skills/saves/spell slots on Character~~ ← done
-7. Initiative Tracker / Encounter Running (Encounter + Combatant, freeform NPCs, wires up
-   the long-dead `ActionEntry.RoundNo`/`InitiativeSlot`) ← next
-8. Monster/NPC Builder & Bestiary (freeform, no SRD import — depends on 7's Combatant shape)
-9. Dice Sets & Folders (saved reusable rolls, batch "roll all" — independent, can interleave)
+7. ~~Initiative Tracker / Encounter Running (Encounter + Combatant, freeform NPCs, wires up
+   the long-dead `ActionEntry.RoundNo`/`InitiativeSlot`)~~ ← done
+8. ~~Monster/NPC Builder & Bestiary (freeform, no SRD import)~~ ← done
+9. Dice Sets & Folders (saved reusable rolls, batch "roll all") ← next
 10. VTT: maps/tokens/fog-of-war, single-shared-screen model (owner-confirmed) — build last,
     most novel infrastructure (first file-serving-outside-wwwroot, first JS interop)
 

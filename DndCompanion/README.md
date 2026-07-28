@@ -5,9 +5,9 @@ manage campaigns and characters, run the at-the-table loop (actions, equipment,
 spells, dice, action log), and — later — AI-assisted audio note-taking.
 
 Stack: **.NET 10 · ASP.NET Core + Blazor · SQLite/EF Core · Electron.NET**, in
-**Clean Architecture**. Phases 1–6 (reference/shell, campaigns/characters, play view + dice,
-audio transcript, Ollama note structuring, combat fundamentals) are built and running;
-an Initiative Tracker, Bestiary, Dice Sets, and a basic VTT are planned next — see
+**Clean Architecture**. Phases 1–8 (reference/shell, campaigns/characters, play view + dice,
+audio transcript, Ollama note structuring, combat fundamentals, initiative tracker, bestiary)
+are built and running; Dice Sets and a basic VTT are planned next — see
 [CLAUDE.md](CLAUDE.md) for the detailed current state and roadmap.
 
 ## Layout
@@ -168,10 +168,30 @@ dotnet ef database update       -p src/DndCompanion.Infrastructure -s src/DndCom
 4. ~~**Audio: transcript** — PortAudioSharp2 → Whisper.net → live transcript~~ done
 5. ~~**Audio: structuring** — Ollama drafts notes you confirm~~ done
 6. ~~**Combat fundamentals** — HP/AC/Speed/Initiative/skills/saves/spell slots~~ done
-7. **Initiative Tracker** — encounter running, PCs + freeform NPCs, round/turn tracking ← next
-8. **Bestiary** — reusable freeform monster/NPC templates
-9. **Dice Sets & Folders** — saved reusable rolls, one-tap batch rolling
+7. ~~**Initiative Tracker** — encounter running, PCs + freeform NPCs, round/turn tracking~~ done
+8. ~~**Bestiary** — reusable freeform monster/NPC templates~~ done
+9. **Dice Sets & Folders** — saved reusable rolls, one-tap batch rolling ← next
 10. **VTT** — maps, tokens, fog-of-war (single shared screen, DM-driven)
+
+## Bestiary
+`/bestiary` is a full CRUD authoring surface (unlike the read-only Spells/Items/Actions
+browsers) for freeform monster/NPC stat lines — name, max HP, AC, initiative bonus, and a
+free-text stat block for attacks/abilities. No SRD monster compendium is bundled, so this is
+where you build up a reusable roster of recurring monsters. From an encounter's "Add
+Combatant" panel, pick "From Bestiary" to drop one in with a rolled or manual initiative —
+it snapshots the template's stats at that moment, so editing the template later never
+retroactively changes HP for a monster already in a fight.
+
+## Running a fight: the Initiative Tracker
+Each campaign has an **Encounters** section (same place as Sessions). Create an encounter
+tied to a session, then open it to add combatants — pull PCs straight from the roster
+(snapshotting their current HP/AC/Initiative, with an optional "Roll" button) or add
+freeform NPCs/monsters by name (no monster compendium is bundled — SRD monster data isn't
+imported, so stat lines are typed in per fight). **Start Encounter** sorts by initiative and
+begins Round 1; **Next Turn** advances through the order, skipping anyone marked Defeated;
+Up/Down arrows let you manually resolve initiative ties. Each combatant has a live HP field
+and a free-text conditions tag. A log box on the same page writes to the linked session,
+now correctly tagged with the round and turn it happened on.
 
 ## Character sheet: combat stats
 Each character now tracks HP (current/max/temp), AC, Speed, Initiative bonus, Size,
