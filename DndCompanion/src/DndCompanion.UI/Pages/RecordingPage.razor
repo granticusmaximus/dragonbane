@@ -1,0 +1,185 @@
+@page "/sessions/{SessionId:guid}/record"
+@using DndCompanion.Application.Abstractions
+@using DndCompanion.Application.Audio
+@using DndCompanion.Domain.Entities
+@implements IAsyncDisposable
+@inject IAudioRecorder Recorder
+@inject ITranscriptionService Transcriber
+@inject IRepository<SessionLog> SessionLogRepository
+@inject IRepository<Recording> RecordingRepository
+@inject IRepository<TranscriptSegment> TranscriptSegmentRepository
+
+<PageTitle>Record — @(_session?.Title ?? "Session")</PageTitle>
+
+<a class="back-link" href="/campaigns">&larr; Back to Campaigns</a>
+
+@if (_session is null)
+{
+    <div class="empty-state">Session not found.</div>
+}
+else
+{
+    <div class="main__header">
+        <h1 class="main__title">Recording: @(string.IsNullOrWhiteSpace(_session.Title) ? _session.SessionDate.ToString("MMMM d, yyyy") : _session.Title)</h1>
+        <p class="main__subtitle">Local transcription via Whisper.net — audio never leaves this machine.</p>
+    </div>
+
+    <div class="section-card">
+        <div class="toolbar">
+            @if (!_isRecording)
+            {
+                <button class="btn btn-primary" @onclick="StartRecording">&#9679; Start Recording</button>
+            }
+            else
+            {
+                <button class="btn btn-danger" @onclick="StopRecording">&#9632; Stop Recording</button>
+                <span class="badge badge--homebrew">Recording&hellip;</span>
+            }
+            @if (_transcribing)
+            {
+                <span class="list-row__meta">Transcribing last chunk&hellip;</span>
+            }
+        </div>
+    </div>
+
+    <div class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Live Transcript</div>
+        </div>
+        @if (_liveSegments.Count == 0)
+        {
+            <div class="empty-state">@(_isRecording ? "Listening..." : "Nothing recorded yet.")</div>
+        }
+        else
+        {
+            @foreach (var seg in _liveSegments)
+            {
+                <div class="session-card">
+                    <div class="session-card__date">@FormatTime(seg.TStart)</div>
+                    <div class="session-card__notes">@seg.Text</div>
+                </div>
+            }
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public Guid SessionId { get; set; }
+
+    private const int ChunkSampleThreshold = 16_000 * 10; // ~10s at 16kHz
+
+    private SessionLog? _session;
+    private Recording? _recording;
+    private bool _isRecording;
+    private bool _transcribing;
+    private readonly List<float> _allSamples = [];
+    private readonly List<float> _chunkBuffer = [];
+    private readonly List<TranscriptSegment> _liveSegments = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _session = await SessionLogRepository.GetAsync(SessionId);
+        Recorder.SamplesCaptured += OnSamplesCaptured;
+    }
+
+    // Fires on PortAudio's native callback thread -- InvokeAsync marshals back to this
+    // component's circuit before touching any Blazor state.
+    private void OnSamplesCaptured(float[] samples)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            _allSamples.AddRange(samples);
+            _chunkBuffer.AddRange(samples);
+            if (_chunkBuffer.Count >= ChunkSampleThreshold && !_transcribing)
+            {
+                await TranscribeChunkAsync();
+            }
+            StateHasChanged();
+        });
+    }
+
+    private async Task StartRecording()
+    {
+        if (_session is null) return;
+
+        _recording = new Recording { SessionLogId = _session.Id, StartedUtc = DateTime.UtcNow, AudioPath = "" };
+        await RecordingRepository.AddAsync(_recording);
+        await RecordingRepository.SaveChangesAsync();
+
+        _allSamples.Clear();
+        _chunkBuffer.Clear();
+        _liveSegments.Clear();
+        Recorder.Start();
+        _isRecording = true;
+    }
+
+    private async Task StopRecording()
+    {
+        if (_recording is null) return;
+
+        Recorder.Stop();
+        _isRecording = false;
+
+        if (_chunkBuffer.Count > 0)
+            await TranscribeChunkAsync();
+
+        var wavBytes = WavEncoder.EncodeMono16Bit(_allSamples, Recorder.SampleRate);
+        var recordingsDir = Path.Combine(AppContext.BaseDirectory, "recordings");
+        Directory.CreateDirectory(recordingsDir);
+        var filePath = Path.Combine(recordingsDir, $"{_recording.Id}.wav");
+        await File.WriteAllBytesAsync(filePath, wavBytes);
+
+        _recording.AudioPath = filePath;
+        _recording.EndedUtc = DateTime.UtcNow;
+        await RecordingRepository.SaveChangesAsync();
+    }
+
+    private async Task TranscribeChunkAsync()
+    {
+        if (_recording is null || _chunkBuffer.Count == 0) return;
+
+        _transcribing = true;
+        try
+        {
+            var samples = _chunkBuffer.ToArray();
+            var chunkStartSeconds = (_allSamples.Count - samples.Length) / (double)Recorder.SampleRate;
+            _chunkBuffer.Clear();
+
+            // Each chunk is transcribed independently (no shared context across chunks) --
+            // simpler and avoids cross-chunk state bugs, at some cost to accuracy on
+            // sentences that straddle a chunk boundary.
+            await foreach (var result in Transcriber.TranscribeAsync(samples))
+            {
+                if (string.IsNullOrWhiteSpace(result.Text)) continue;
+
+                var segment = new TranscriptSegment
+                {
+                    RecordingId = _recording.Id,
+                    TStart = chunkStartSeconds + result.TStart,
+                    TEnd = chunkStartSeconds + result.TEnd,
+                    Text = result.Text,
+                    Confidence = result.Confidence
+                };
+                await TranscriptSegmentRepository.AddAsync(segment);
+                _liveSegments.Add(segment);
+            }
+            await TranscriptSegmentRepository.SaveChangesAsync();
+        }
+        finally
+        {
+            _transcribing = false;
+        }
+    }
+
+    private static string FormatTime(double seconds) => TimeSpan.FromSeconds(seconds).ToString(@"mm\:ss");
+
+    public async ValueTask DisposeAsync()
+    {
+        Recorder.SamplesCaptured -= OnSamplesCaptured;
+        if (_isRecording)
+        {
+            Recorder.Stop();
+        }
+        await Task.CompletedTask;
+    }
+}

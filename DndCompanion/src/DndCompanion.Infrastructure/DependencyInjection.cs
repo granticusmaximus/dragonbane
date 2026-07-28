@@ -1,4 +1,5 @@
 using DndCompanion.Application.Abstractions;
+using DndCompanion.Infrastructure.Audio;
 using DndCompanion.Infrastructure.Dice;
 using DndCompanion.Infrastructure.Persistence;
 using DndCompanion.Infrastructure.Srd;
@@ -10,7 +11,7 @@ namespace DndCompanion.Infrastructure;
 public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
-        this IServiceCollection services, string sqlitePath)
+        this IServiceCollection services, string sqlitePath, string whisperModelPath)
     {
         services.AddDbContext<AppDbContext>(o => o.UseSqlite($"Data Source={sqlitePath}"));
         services.AddSingleton<IDiceRoller, DiceRoller>();
@@ -18,8 +19,11 @@ public static class DependencyInjection
         services.AddScoped<ICampaignRepository, EfCampaignRepository>();
         services.AddScoped<ICharacterRepository, EfCharacterRepository>();
         services.AddScoped<SrdImporter>();
-        // TODO: register ITranscriptionService (Whisper.net) and INoteStructurer (Ollama)
-        //       in Phase 4/5.
+        // Both wrap a single native resource (audio device / loaded GGML model) meant to
+        // live for the app's lifetime, not per-request.
+        services.AddSingleton<IAudioRecorder, PortAudioRecorder>();
+        services.AddSingleton<ITranscriptionService>(_ => new WhisperTranscriptionService(whisperModelPath));
+        // TODO: register INoteStructurer (Ollama) in Phase 5.
         return services;
     }
 }

@@ -140,12 +140,15 @@ else
             @foreach (var session in _campaign.Sessions.OrderBy(s => s.SessionDate))
             {
                 <div class="session-card">
-                    <div class="session-card__date">
-                        @if (!string.IsNullOrWhiteSpace(session.Title))
-                        {
-                            @session.Title<text> &middot; </text>
-                        }
-                        @session.SessionDate.ToString("MMMM d, yyyy")
+                    <div class="session-card__date" style="display: flex; align-items: center; justify-content: space-between;">
+                        <span>
+                            @if (!string.IsNullOrWhiteSpace(session.Title))
+                            {
+                                @session.Title<text> &middot; </text>
+                            }
+                            @session.SessionDate.ToString("MMMM d, yyyy")
+                        </span>
+                        <a class="btn btn-ghost" href="/sessions/@session.Id/record">Record</a>
                     </div>
                     @if (!string.IsNullOrWhiteSpace(session.Notes))
                     {

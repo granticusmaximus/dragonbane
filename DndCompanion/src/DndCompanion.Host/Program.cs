@@ -17,7 +17,9 @@ builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 
 // SQLite lives next to the app data — swap for a per-user path in production.
 var dbPath = Path.Combine(AppContext.BaseDirectory, "dndcompanion.db");
-builder.Services.AddInfrastructure(dbPath);
+// Downloaded on first use (see WhisperTranscriptionService) — not committed to the repo.
+var whisperModelPath = Path.Combine(AppContext.BaseDirectory, "models", "ggml-base.bin");
+builder.Services.AddInfrastructure(dbPath, whisperModelPath);
 
 var app = builder.Build();
 

@@ -5,9 +5,9 @@ manage campaigns and characters, run the at-the-table loop (actions, equipment,
 spells, dice, action log), and — later — AI-assisted audio note-taking.
 
 Stack: **.NET 10 · ASP.NET Core + Blazor · SQLite/EF Core · Electron.NET**, in
-**Clean Architecture**. Phases 1–3 (reference/shell, campaigns/characters, play view
-+ dice) are built and running — see [CLAUDE.md](CLAUDE.md) for the detailed current
-state and roadmap.
+**Clean Architecture**. Phases 1–4 (reference/shell, campaigns/characters, play view
++ dice, audio transcript) are built and running — see [CLAUDE.md](CLAUDE.md) for the
+detailed current state and roadmap.
 
 ## Layout
 ```
@@ -111,6 +111,23 @@ damage dice, and log any roll — or a free-text note — to that session's
 `ActionEntry` log. Weapon rolls are base damage dice only; there's no structured
 attack-bonus field on items yet, so to-hit math isn't modeled.
 
+## Audio transcript
+Each session on a campaign's detail page has a **Record** link
+(`/sessions/{id}/record`): local, offline mic transcription — audio never leaves
+the machine.
+
+- **Capture**: `PortAudioSharp2`, not NAudio. NAudio has no macOS recording support
+  (confirmed with the maintainer's own words — not on their roadmap even in the 3.0
+  preview, which only adds Linux). PortAudioSharp2 bundles real native binaries for
+  macOS (x64 + Apple Silicon).
+- **Transcription**: Whisper.net, model downloaded on first use (~148 MB,
+  `ggml-base.bin`) to `{app directory}/models/` — never committed to the repo.
+- Recording buffers ~10-second chunks, transcribes each independently, and shows
+  results live. On Stop, the full session audio is saved as a real `.wav` file
+  under `{app directory}/recordings/`.
+- No voice-activity detection yet — Whisper will produce short spurious phrases
+  from ambient noise during silence. Not a bug, just unfiltered.
+
 ## EF Core migrations
 The `Initial` migration + local SQLite DB (`dndcompanion.db`, next to the built
 Host) are already created. To add a new migration after changing entities:
@@ -123,8 +140,8 @@ dotnet ef database update       -p src/DndCompanion.Infrastructure -s src/DndCom
 1. ~~**Reference + shell** — SRD import, browse rules/spells/items~~ done
 2. ~~**Campaigns & characters** — CRUD, character sheet, homebrew entry (Aasimar)~~ done
 3. ~~**Play view + dice** — actions/equipment/spells + dice roller + action log~~ done
-4. **Audio: transcript** — NAudio → Whisper.net → live transcript  ← next
-5. **Audio: structuring** — Ollama drafts notes you confirm
+4. ~~**Audio: transcript** — PortAudioSharp2 → Whisper.net → live transcript~~ done
+5. **Audio: structuring** — Ollama drafts notes you confirm  ← next
 
 ## Two things baked into the design
 - **Rules are data, not code.** Every rules row carries a `ContentSource`

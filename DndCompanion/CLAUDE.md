@@ -10,7 +10,11 @@ AI-assisted audio note-taking from the laptop mic.
 
 ## Stack (do not swap without asking)
 .NET 10 · ASP.NET Core + Blazor · SQLite / EF Core · Electron.NET shell ·
-Clean Architecture. Local AI later via Ollama; local STT via Whisper.net; mic via NAudio.
+Clean Architecture. Local AI later via Ollama; local STT via Whisper.net; mic via
+**PortAudioSharp2** (swapped from the originally-planned NAudio — confirmed via the
+maintainer's own words that NAudio has no macOS recording support in either the
+stable 2.x line or the 3.0 preview's new Linux/ALSA support; approved by the owner
+before implementing). PortAudioSharp2 bundles real native binaries for osx-arm64.
 
 ## Architecture
 ```
@@ -28,9 +32,9 @@ Host's DI container is what wires `EfRepository<T>` in. This was violated once m
 (pages briefly injected `IDbContextFactory<AppDbContext>` directly) and corrected — watch for
 this regression if extending the UI layer.
 
-## Current state (Phases 1–3 done; audio not started)
+## Current state (Phases 1–4 done; Phase 5 — Ollama note structuring — not started)
 - Solution + all six projects wired up; `dotnet build` and `dotnet test` are green
-  (net10.0, EF Core 10.0.10, ElectronNET.API 23.6.2, 28 passing tests).
+  (net10.0, EF Core 10.0.10, ElectronNET.API 23.6.2, 36 passing tests).
 - Blazor `App`/`Routes` live in `DndCompanion.Host/Components` (thin — no page logic).
   `MainLayout` (sidebar nav: Campaigns/Characters/Spells/Items/Actions/Dice Roller) and
   all pages live in `DndCompanion.UI` (`Layout/MainLayout.razor`, `Pages/*.razor`).
@@ -102,13 +106,38 @@ this regression if extending the UI layer.
   `SQLitePCLRaw.bundle_e_sqlite3` to 2.1.12 (bundles SQLite 3.53.3) via a direct
   PackageReference in Infrastructure, overriding EF Core Sqlite's transitive 2.1.11
   (which bundled 3.49.1, before the fix in 3.50.2).
+- **Audio transcript** (`/sessions/{id}/record`, linked from each session on the
+  campaign detail page): `PortAudioRecorder` (`Infrastructure/Audio/`) captures mono
+  16 kHz mic audio; `WhisperTranscriptionService` runs it through Whisper.net
+  (`ggml-base.bin`, downloaded on first use via `WhisperGgmlDownloader` to
+  `{BaseDirectory}/models/` — ~148 MB, never committed to the repo). Recording page
+  buffers ~10s chunks, transcribes each independently (no cross-chunk context — simpler,
+  costs some accuracy on sentences split across a chunk boundary), persists every
+  segment to `TranscriptSegment` live, and on Stop writes the full session audio to a
+  real `.wav` file (`{BaseDirectory}/recordings/{recordingId}.wav`) referenced by
+  `Recording.AudioPath`. `ITranscriptionService` was changed from `Stream` to
+  `ReadOnlyMemory<float>` — it had never been implemented before this, and Whisper.net
+  takes raw float samples directly, so a Stream/WAV round-trip would've been pure
+  overhead. **Verified against a real live microphone**, not just unit tests — caught
+  and fixed a real library bug in the process (see PortAudioRecorder's doc comment:
+  `Stream.Stop()` then `Dispose()`/`using` throws from inside `Close()`; calling
+  `Stop()` then `Close()` directly does not — the class never uses `Dispose()`/`using`
+  on the underlying native stream). That live test also captured ~60s of real ambient
+  room audio (not D&D-related) to prove the pipeline end-to-end; deleted the captured
+  Recording/TranscriptSegment rows and the .wav file afterward rather than leave
+  incidentally-captured audio sitting in the user's real database — worth remembering
+  if testing this feature again.
+- Whisper picks up ambient noise as short spurious phrases when there's no real
+  speech (a known Whisper behavior on silence, not a bug) — no VAD/silence-gating is
+  implemented, so expect noise in the transcript during quiet stretches. A future
+  improvement, not required for this phase.
 
 ## Roadmap — build in usable slices, audio LAST
 1. ~~Reference + shell: SRD 5.2 import → browse/search rules, spells, items~~ ← done
 2. ~~Campaigns & characters: CRUD, character sheet, homebrew entry path~~ ← done
 3. ~~Play view + dice: actions/equipment/spells + roller + ActionEntry log~~ ← done
-4. Audio transcript: NAudio → Whisper.net → live transcript ← next
-5. Audio structuring: Ollama drafts notes; user confirms
+4. ~~Audio transcript: PortAudioSharp2 → Whisper.net → live transcript~~ ← done
+5. Audio structuring: Ollama drafts notes; user confirms ← next
 
 ## Non-negotiable design decisions
 - **Rules are data, not code.** Every rules row carries a `ContentSource`
