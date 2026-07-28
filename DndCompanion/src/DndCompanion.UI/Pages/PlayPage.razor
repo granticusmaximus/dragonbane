@@ -5,6 +5,7 @@
 @using DndCompanion.Domain
 @using DndCompanion.Domain.Entities
 @using DndCompanion.Domain.ValueObjects
+@using DndCompanion.UI.Components
 @inject ICharacterRepository CharacterRepository
 @inject IDiceRoller DiceRoller
 @inject IRepository<ActionEntry> ActionEntryRepository
@@ -161,12 +162,12 @@ else
             @if (_lastResult is not null)
             {
                 <div class="section-card dice-roller">
-                    <div class="tray">
+                    <div class="tray" @key="_rollSeq">
                         <div class="label">@_lastResult.Label</div>
                         <div class="dice">
                             @foreach (var d in _lastResult.Dice)
                             {
-                                <span class="die d@(d.Sides) @HighlightClass(d)">@d.Value</span>
+                                <DieFace Sides="d.Sides" Value="d.Value" CssClass="@HighlightClass(d)" />
                             }
                         </div>
                         <div class="total">@_lastResult.Total</div>
@@ -278,6 +279,7 @@ else
     private RollMode _rollMode = RollMode.Normal;
     private bool _addProficiency;
     private DiceResult? _lastResult;
+    private int _rollSeq; // bumped on every roll so DieFace's roll-in animation replays
     private string _manualEntryText = "";
 
     private List<DiceSetFolder> _diceSetFolders = [];
@@ -404,10 +406,16 @@ else
         await LoadDiceSetsAsync();
     }
 
+    private void SetLastResult(DiceResult result)
+    {
+        _lastResult = result;
+        _rollSeq++; // forces the tray to remount so DieFace's roll-in animation replays
+    }
+
     private void RollSet(DiceSet set)
     {
         if (!DiceExpression.TryParse(set.Expression, out var expr) || expr is null) return;
-        _lastResult = DiceRoller.Roll(expr, set.Name);
+        SetLastResult(DiceRoller.Roll(expr, set.Name));
     }
 
     private async Task RollAllInFolder(DiceSetFolder folder)
@@ -418,7 +426,7 @@ else
         {
             if (!DiceExpression.TryParse(set.Expression, out var expr) || expr is null) continue;
             var result = DiceRoller.Roll(expr, set.Name);
-            _lastResult = result;
+            SetLastResult(result);
             await ActionEntryRepository.AddAsync(new ActionEntry
             {
                 SessionLogId = sessionId,
@@ -473,13 +481,13 @@ else
     {
         var modifier = mod + (_addProficiency && _character is not null ? _character.ProficiencyBonus : 0);
         var label = $"{ability} check" + (_addProficiency ? " (proficient)" : "");
-        _lastResult = DiceRoller.RollD20(modifier, _rollMode, label);
+        SetLastResult(DiceRoller.RollD20(modifier, _rollMode, label));
     }
 
     private void RollWeaponDamage(Item item, string dice)
     {
         if (!DiceExpression.TryParse(dice, out var expr) || expr is null) return;
-        _lastResult = DiceRoller.Roll(expr, $"{item.Name} damage");
+        SetLastResult(DiceRoller.Roll(expr, $"{item.Name} damage"));
     }
 
     private static string HighlightClass(Die d) =>

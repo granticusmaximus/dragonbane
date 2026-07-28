@@ -106,10 +106,29 @@ this regression if extending the UI layer.
   `ASPNETCORE_ENVIRONMENT=Development` boots in Production, where ASP.NET Core
   won't serve RCL/framework static web assets (`_framework/blazor.web.js`) from the
   dev-time provider — page loads but nothing is interactive.
-- `DiceRoller.razor` (the original Phase-1 component) still shows the minimal
-  C#-driven pattern with hardcoded buttons; rich SVG visuals still to port. The real
-  data-driven roller now lives in the Play view instead — the old component wasn't
-  replaced, just superseded for actual play.
+- `DiceRoller.razor` (`/dice-roller`, standalone — not tied to a character) was rebuilt with
+  real dice visuals per owner request: new `Components/DieFace.razor` renders each rolled die
+  as an actual polyhedral silhouette (triangle/d4, square/d6, diamond/d8, kite/d10 & d100,
+  pentagon/d12, hexagon/d20 — anything else falls back to a circle), not a plain numbered
+  square, plus a brief CSS roll-in animation (`@keyframes die-roll-in`, respects
+  `prefers-reduced-motion`) that replays on every roll via an incrementing `@key` forcing the
+  tray to remount. The old hardcoded spell-specific quick buttons (Cure Wounds/Healing
+  Word/etc. — leftover Phase-1 placeholder content, not tied to any real character) were
+  replaced with three generic sections: **Roll a Die** (one-tap d4/d6/d8/d10/d12/d20/d100),
+  **Check Roll** (d20 + modifier + advantage/normal/disadvantage, mirroring the Play view's
+  ability-check UX but usable without picking a character), and **Custom Roll** (a validated
+  free-text expression, e.g. "2d6+3"). `PlayPage`'s own results tray was switched to the same
+  `DieFace` component too, so the visual language is consistent app-wide, not just on this one
+  page. **Two real bugs found and fixed while building this**: (1) writing `d@sides` in Razor
+  markup silently rendered the literal text "d@sides" instead of interpolating — Razor's HTML
+  tokenizer treats a letter immediately followed by `@word` as looking like an email address
+  and leaves it as plain text; the fix is `d@(sides)` (explicit parens), matching a pattern the
+  codebase already used elsewhere (`d@(d.Sides)` in the old tray markup) without it being
+  documented as a rule — now it is. (2) The new "Check Roll" button was building its own
+  "(Advantage)"/"(Disadvantage)" label suffix, but `DiceRoller.RollD20` already appends
+  " (adv)"/" (dis)" itself whenever `mode != Normal`, producing a doubled-up label like
+  "Check (Advantage) (adv)" — fixed by not duplicating that in the caller, matching how
+  `PlayPage.RollAbilityCheck` already correctly left it to the roller.
 - `SQLitePCLRaw.lib.e_sqlite3` NU1903 (GHSA-2m69-gcr7-jv3q) — **fixed**. Pinned
   `SQLitePCLRaw.bundle_e_sqlite3` to 2.1.12 (bundles SQLite 3.53.3) via a direct
   PackageReference in Infrastructure, overriding EF Core Sqlite's transitive 2.1.11

@@ -588,7 +588,7 @@ button { cursor: pointer; }
 .badge--homebrew { background: var(--color-homebrew-bg); color: var(--color-homebrew-text); }
 
 /* ============================================================
-   Dice roller (existing component, restyled to tokens)
+   Dice roller — real polyhedral die shapes + a roll-in animation
    ============================================================ */
 .dice-roller .tray {
     display: flex;
@@ -597,27 +597,56 @@ button { cursor: pointer; }
     gap: var(--space-2);
     margin-bottom: var(--space-4);
 }
-.dice-roller .dice { display: flex; gap: var(--space-2); }
-.dice-roller .die {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2rem;
-    height: 2rem;
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-sm);
-    background: var(--bg-inset);
-}
-.dice-roller .die.glow { border-color: var(--color-nat20); box-shadow: 0 0 6px var(--color-nat20); }
-.dice-roller .die.fumble { border-color: var(--color-nat1); }
+.dice-roller .dice { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 .dice-roller .crit { color: var(--color-nat20); font-weight: bold; }
 .dice-roller .fumble { color: var(--color-nat1); font-weight: bold; }
-.dice-roller .quick { display: flex; gap: var(--space-2); flex-wrap: wrap; }
-.dice-roller .quick button {
-    background: var(--bg-surface-raised);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-sm);
-    padding: var(--space-2) var(--space-3);
-    color: var(--text-primary);
+
+.die-face {
+    width: 2.75rem;
+    height: 2.75rem;
+    animation: die-roll-in 0.4s ease-out;
 }
-.dice-roller .quick button:hover { border-color: var(--accent); }
+.die-face__svg { width: 100%; height: 100%; overflow: visible; }
+.die-face__svg polygon, .die-face__svg rect, .die-face__svg circle {
+    fill: var(--bg-inset);
+    stroke: var(--border-default);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+}
+.die-face__value {
+    fill: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 700;
+    font-family: inherit;
+}
+.die-face.crit .die-face__svg polygon,
+.die-face.crit .die-face__svg rect,
+.die-face.crit .die-face__svg circle {
+    stroke: var(--color-nat20);
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 3px var(--color-nat20));
+}
+.die-face.crit .die-face__value { fill: var(--color-nat20); }
+.die-face.fumble .die-face__svg polygon,
+.die-face.fumble .die-face__svg rect,
+.die-face.fumble .die-face__svg circle {
+    stroke: var(--color-nat1);
+    stroke-width: 2.5;
+}
+.die-face.fumble .die-face__value { fill: var(--color-nat1); }
+
+/* A light stagger across the first several dice so a multi-die roll doesn't land all at once. */
+.die-face:nth-child(2) { animation-delay: 0.05s; }
+.die-face:nth-child(3) { animation-delay: 0.1s; }
+.die-face:nth-child(4) { animation-delay: 0.15s; }
+.die-face:nth-child(5) { animation-delay: 0.2s; }
+.die-face:nth-child(n+6) { animation-delay: 0.25s; }
+
+@keyframes die-roll-in {
+    0%   { transform: rotate(-30deg) scale(0.4); opacity: 0; }
+    60%  { transform: rotate(10deg) scale(1.08); opacity: 1; }
+    100% { transform: rotate(0deg) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .die-face { animation: none; }
+}

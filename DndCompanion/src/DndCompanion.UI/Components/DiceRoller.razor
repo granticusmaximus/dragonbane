@@ -3,22 +3,15 @@
 @using DndCompanion.Domain.ValueObjects
 @inject IDiceRoller Roller
 
-@*
-  Minimal Blazor port that proves the C#-driven pattern: a spell/action button
-  passes its dice expression here and the roller returns a DiceResult you can render
-  AND persist as an ActionEntry. The rich SVG visuals from the standalone HTML
-  companion drop into the markup below.
-*@
-
 <div class="dice-roller">
     @if (_result is not null)
     {
-        <div class="tray">
+        <div class="tray" @key="_rollSeq">
             <div class="label">@_result.Label</div>
             <div class="dice">
                 @foreach (var d in _result.Dice)
                 {
-                    <span class="die d@(d.Sides) @(HighlightClass(d))">@d.Value</span>
+                    <DieFace Sides="d.Sides" Value="d.Value" CssClass="@HighlightClass(d)" />
                 }
             </div>
             <div class="total">@_result.Total</div>
@@ -26,32 +19,88 @@
             else if (_result.IsNat1) { <div class="fumble">NAT 1</div> }
         </div>
     }
-    <div class="quick">
-        <button @onclick="@(() => RollExpr("2d8+2", "Cure Wounds"))">Cure Wounds</button>
-        <button @onclick="@(() => RollExpr("2d4+2", "Healing Word"))">Healing Word</button>
-        <button @onclick="@(() => RollExpr("1d10", "Fire Bolt"))">Fire Bolt</button>
-        <button @onclick="@(() => RollAttack(4, "Spell Attack"))">Spell Attack +4</button>
+
+    <div class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Roll a Die</div>
+        </div>
+        <div class="toolbar">
+            @foreach (var sides in StandardDice)
+            {
+                <button class="btn" @onclick="() => RollSingle(sides)">d@(sides)</button>
+            }
+        </div>
+    </div>
+
+    <div class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Check Roll</div>
+        </div>
+        <div class="toolbar">
+            <button class="filter-chip @(_rollMode == RollMode.Disadvantage ? "active" : "")" @onclick="() => _rollMode = RollMode.Disadvantage">Disadvantage</button>
+            <button class="filter-chip @(_rollMode == RollMode.Normal ? "active" : "")" @onclick="() => _rollMode = RollMode.Normal">Normal</button>
+            <button class="filter-chip @(_rollMode == RollMode.Advantage ? "active" : "")" @onclick="() => _rollMode = RollMode.Advantage">Advantage</button>
+            <label class="form-field form-field--checkbox" style="margin-left: auto;">
+                <span>Modifier</span>
+                <input type="number" style="width: 4rem;" @bind="_checkModifier" />
+            </label>
+            <button class="btn btn-primary" @onclick="RollCheck">Roll d20</button>
+        </div>
+    </div>
+
+    <div class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Custom Roll</div>
+        </div>
+        <div class="toolbar">
+            <input placeholder="e.g. 2d6+3" value="@_customExpr" @oninput="e => _customExpr = e.Value?.ToString() ?? string.Empty" />
+            <button class="btn btn-primary" @onclick="RollCustom" disabled="@(!IsCustomExprValid)">Roll</button>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(_customExpr) && !IsCustomExprValid)
+        {
+            <p class="list-row__meta">Not a valid dice expression (e.g. "2d6+3").</p>
+        }
     </div>
 </div>
 
 @code {
-    private DiceResult? _result;
+    private static readonly int[] StandardDice = [4, 6, 8, 10, 12, 20, 100];
 
-    /// <summary>Fired after every roll so the parent can log an ActionEntry.</summary>
+    private DiceResult? _result;
+    private int _rollSeq;
+    private RollMode _rollMode = RollMode.Normal;
+    private int _checkModifier;
+    private string _customExpr = "";
+
+    /// <summary>Fired after every roll so a host page can log an ActionEntry.</summary>
     [Parameter] public EventCallback<DiceResult> OnRolled { get; set; }
 
-    private async Task RollExpr(string expr, string label)
+    private bool IsCustomExprValid => DiceExpression.TryParse(_customExpr, out _);
+
+    private async Task RollSingle(int sides)
     {
-        _result = Roller.Roll(DiceExpression.Parse(expr), label);
-        await OnRolled.InvokeAsync(_result);
+        await Publish(Roller.Roll(new DiceExpression(1, sides, 0), $"d{sides}"));
     }
 
-    private async Task RollAttack(int mod, string label)
+    private async Task RollCheck()
     {
-        _result = Roller.RollD20(mod, RollMode.Normal, label);
+        // RollD20 already appends "(adv)"/"(dis)" itself when mode != Normal — don't duplicate that here.
+        await Publish(Roller.RollD20(_checkModifier, _rollMode, "Check"));
+    }
+
+    private async Task RollCustom()
+    {
+        if (!DiceExpression.TryParse(_customExpr, out var expr) || expr is null) return;
+        await Publish(Roller.Roll(expr, expr.ToString()));
+    }
+
+    private async Task Publish(DiceResult result)
+    {
+        _result = result;
+        _rollSeq++; // forces the tray (and every DieFace in it) to remount so the roll-in animation replays
         await OnRolled.InvokeAsync(_result);
     }
 
     private static string HighlightClass(Die d) =>
-        d is { Sides: 20, Value: 20 } ? "glow" : d is { Sides: 20, Value: 1 } ? "fumble" : "";
+        d is { Sides: 20, Value: 20 } ? "crit" : d is { Sides: 20, Value: 1 } ? "fumble" : "";
 }

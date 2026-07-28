@@ -182,6 +182,13 @@ Combatant" panel, pick "From Bestiary" to drop one in with a rolled or manual in
 it snapshots the template's stats at that moment, so editing the template later never
 retroactively changes HP for a monster already in a fight.
 
+## Dice Roller
+`/dice-roller` is a standalone roller — no character required. Every rolled die renders as
+its real polyhedral shape (triangle/d4, square/d6, diamond/d8, kite/d10 & d100, pentagon/d12,
+hexagon/d20) with a quick roll-in animation, not just a number in a box. Three ways to roll:
+one-tap **Roll a Die** for a single d4–d100, **Check Roll** for a d20 + modifier with
+advantage/disadvantage, or **Custom Roll** for any expression like `2d6+3`.
+
 ## Dice Sets
 On a character's Play page, save reusable dice expressions (e.g. "Sneak Attack" = `3d6`)
 into named folders. Click one to roll it into the results tray like any other roll, or hit
