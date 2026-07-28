@@ -246,4 +246,40 @@ public class RepositoryTests : IDisposable
         Assert.Equal(Skill.None, reloaded.ProficientSkills);
         Assert.Equal(Ability.None, reloaded.ProficientSaves);
     }
+
+    [Fact]
+    public async Task Encounter_repository_loads_combatants_with_GetWithCombatantsAsync()
+    {
+        var campaignRepo = new EfCampaignRepository(_db);
+        var sessionRepo = new EfRepository<SessionLog>(_db);
+        var encounterRepo = new EfEncounterRepository(_db);
+        var combatantRepo = new EfRepository<Combatant>(_db);
+
+        var campaign = new Campaign { Name = "Beyond the Blue Door" };
+        await campaignRepo.AddAsync(campaign);
+        await campaignRepo.SaveChangesAsync();
+
+        var session = new SessionLog { CampaignId = campaign.Id, Title = "Session One" };
+        await sessionRepo.AddAsync(session);
+        await sessionRepo.SaveChangesAsync();
+
+        var encounter = new Encounter { SessionLogId = session.Id, Name = "Goblin Ambush" };
+        await encounterRepo.AddAsync(encounter);
+        await encounterRepo.SaveChangesAsync();
+
+        await combatantRepo.AddAsync(new Combatant { EncounterId = encounter.Id, Name = "Goblin 1", InitiativeRoll = 15, OrderIndex = 0, MaxHp = 7, CurrentHp = 7, ArmorClass = 15 });
+        await combatantRepo.AddAsync(new Combatant { EncounterId = encounter.Id, Name = "Baloney Slim", CharacterId = Guid.NewGuid(), InitiativeRoll = 12, OrderIndex = 1, MaxHp = 24, CurrentHp = 24, ArmorClass = 15 });
+        await combatantRepo.SaveChangesAsync();
+
+        var loaded = await encounterRepo.GetWithCombatantsAsync(encounter.Id);
+
+        Assert.NotNull(loaded);
+        Assert.Equal(EncounterStatus.Planned, loaded!.Status);
+        var ordered = loaded.Combatants.OrderBy(c => c.OrderIndex).ToList();
+        Assert.Equal(2, ordered.Count);
+        Assert.Equal("Goblin 1", ordered[0].Name);
+        Assert.Null(ordered[0].CharacterId);
+        Assert.Equal("Baloney Slim", ordered[1].Name);
+        Assert.NotNull(ordered[1].CharacterId);
+    }
 }

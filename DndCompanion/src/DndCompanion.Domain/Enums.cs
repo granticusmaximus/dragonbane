@@ -14,6 +14,8 @@ public enum NoteKind { Turn, Move, Action, Location, Loot, Other }
 
 public enum EntrySource { Manual, Dice, Audio }
 
+public enum EncounterStatus { Planned, Active, Completed }
+
 // Medium listed first so it's the CLR/enum default (ordinal 0) — matches Character.Size's
 // intended default and avoids an EF Core default-value "sentinel" mismatch: if Medium weren't
 // the CLR default, explicitly setting a character to the actual CLR-default value (e.g. Tiny,

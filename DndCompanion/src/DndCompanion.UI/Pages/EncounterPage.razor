@@ -1,0 +1,329 @@
+@page "/campaigns/{CampaignId:guid}/encounters/{Id:guid}"
+@using DndCompanion.Application.Abstractions
+@using DndCompanion.Application.Encounters
+@using DndCompanion.Domain
+@using DndCompanion.Domain.Entities
+@inject IEncounterRepository EncounterRepository
+@inject ICampaignRepository CampaignRepository
+@inject IRepository<Combatant> CombatantRepository
+@inject IRepository<ActionEntry> ActionEntryRepository
+@inject IDiceRoller DiceRoller
+@inject NavigationManager Nav
+
+<PageTitle>@(_encounter?.Name ?? "Encounter")</PageTitle>
+
+<a class="back-link" href="/campaigns/@CampaignId">&larr; Back to Campaign</a>
+
+@if (_encounter is null)
+{
+    <div class="empty-state">Encounter not found.</div>
+}
+else
+{
+    <div class="main__header">
+        <h1 class="main__title">@_encounter.Name</h1>
+        <p class="main__subtitle">
+            @_encounter.Status
+            @if (_encounter.Status == EncounterStatus.Active)
+            {
+                @: &middot; Round @_encounter.CurrentRound
+            }
+        </p>
+    </div>
+
+    <div class="section-card">
+        <div class="toolbar">
+            @if (_encounter.Status == EncounterStatus.Planned)
+            {
+                <button class="btn btn-primary" @onclick="StartEncounter" disabled="@(_combatants.Count == 0)">Start Encounter</button>
+            }
+            else if (_encounter.Status == EncounterStatus.Active)
+            {
+                <button class="btn btn-primary" @onclick="NextTurn">Next Turn</button>
+                <button class="btn btn-ghost" @onclick="SortByInitiative">Re-sort by Initiative</button>
+                <button class="btn btn-danger" @onclick="EndEncounter">End Encounter</button>
+            }
+            else
+            {
+                <span class="list-row__meta">This encounter has ended.</span>
+            }
+        </div>
+    </div>
+
+    <!-- ===================== Combatants ===================== -->
+    <div class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Combatants</div>
+        </div>
+
+        @if (_combatants.Count == 0)
+        {
+            <div class="empty-state">No combatants yet — add some below.</div>
+        }
+        else
+        {
+            <div class="list">
+                @foreach (var c in _combatants.OrderBy(c => c.OrderIndex))
+                {
+                    var isCurrent = _encounter.Status == EncounterStatus.Active && c.OrderIndex == _encounter.CurrentTurnIndex;
+                    <div class="combatant-row @(isCurrent ? "combatant-row--current" : "") @(c.IsDefeated ? "combatant-row--defeated" : "")">
+                        <div class="combatant-row__main">
+                            <span class="list-row__name">@c.Name</span>
+                            <span class="badge @(c.CharacterId is null ? "badge--homebrew" : "badge--srd")">@(c.CharacterId is null ? "NPC" : "PC")</span>
+                            <span class="list-row__meta">Init @c.InitiativeRoll &middot; AC @c.ArmorClass</span>
+                            @if (c.IsDefeated)
+                            {
+                                <span class="badge badge--defeated">Defeated</span>
+                            }
+                        </div>
+                        <div class="hp-display">
+                            <input type="number" min="0" max="@c.MaxHp" value="@c.CurrentHp" @onchange="e => SetCombatantHp(c, e)" />
+                            <span>/ @c.MaxHp HP</span>
+                        </div>
+                        <input class="combatant-row__conditions" placeholder="Conditions (e.g. Prone, Poisoned)" value="@c.ConditionsCsv" @onchange="e => SetConditions(c, e)" />
+                        <div class="toolbar">
+                            <button class="btn" @onclick="() => MoveCombatant(c, -1)">&uarr;</button>
+                            <button class="btn" @onclick="() => MoveCombatant(c, 1)">&darr;</button>
+                            <button class="btn btn-ghost" @onclick="() => ToggleDefeated(c)">@(c.IsDefeated ? "Revive" : "Defeat")</button>
+                            <button class="remove-btn" @onclick="() => RemoveCombatant(c)">Remove</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- ===================== Add Combatant ===================== -->
+    <div class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Add Combatant</div>
+        </div>
+        <div class="form-grid">
+            <div class="form-field">
+                <label>From Roster</label>
+                <select @bind="_selectedCharacterId">
+                    <option value="">Choose a character...</option>
+                    @foreach (var pc in _availablePcs)
+                    {
+                        <option value="@pc.Id">@pc.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="form-field">
+                <label>Initiative</label>
+                <div class="hp-display">
+                    <input type="number" @bind="_pcInitiative" />
+                    <button class="btn btn-ghost" @onclick="RollPcInitiative" disabled="@string.IsNullOrEmpty(_selectedCharacterId)">Roll</button>
+                </div>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-primary" @onclick="AddPcCombatant" disabled="@string.IsNullOrEmpty(_selectedCharacterId)">Add PC</button>
+        </div>
+
+        <div class="form-grid" style="margin-top: 12px;">
+            <div class="form-field"><label>NPC/Monster Name</label><input @bind="_npc.Name" @bind:event="oninput" placeholder="e.g. Goblin" /></div>
+            <div class="form-field"><label>Initiative</label><input type="number" @bind="_npc.InitiativeRoll" /></div>
+            <div class="form-field"><label>Max HP</label><input type="number" min="0" @bind="_npc.MaxHp" /></div>
+            <div class="form-field"><label>Armor Class</label><input type="number" min="0" @bind="_npc.ArmorClass" /></div>
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-primary" @onclick="AddNpcCombatant" disabled="@string.IsNullOrWhiteSpace(_npc.Name)">Add NPC/Monster</button>
+        </div>
+    </div>
+
+    <!-- ===================== Session Log ===================== -->
+    <div class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Log to Session</div>
+        </div>
+        <div class="form-field">
+            <textarea rows="2" placeholder="What happened this turn..." @bind="_logText" @bind:event="oninput"></textarea>
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-primary" @onclick="LogEntry" disabled="@string.IsNullOrWhiteSpace(_logText)">Log Entry</button>
+        </div>
+    </div>
+}
+
+@code {
+    private sealed class NpcForm
+    {
+        public string Name = "";
+        public int InitiativeRoll;
+        public int MaxHp;
+        public int ArmorClass = 10;
+    }
+
+    [Parameter] public Guid CampaignId { get; set; }
+    [Parameter] public Guid Id { get; set; }
+
+    private Encounter? _encounter;
+    private Campaign? _campaign;
+    private List<Combatant> _combatants = [];
+    private List<Character> _availablePcs = [];
+
+    private string _selectedCharacterId = "";
+    private int _pcInitiative;
+    private NpcForm _npc = new();
+    private string _logText = "";
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _encounter = await EncounterRepository.GetWithCombatantsAsync(Id);
+        if (_encounter is null) return;
+        _combatants = _encounter.Combatants.ToList();
+
+        _campaign = await CampaignRepository.GetWithCharactersAsync(CampaignId);
+        if (_campaign is not null)
+        {
+            var alreadyAdded = _combatants.Where(c => c.CharacterId is not null).Select(c => c.CharacterId!.Value).ToHashSet();
+            _availablePcs = _campaign.Characters.Select(cc => cc.Character).Where(c => !alreadyAdded.Contains(c.Id)).OrderBy(c => c.Name).ToList();
+        }
+    }
+
+    private void RollPcInitiative()
+    {
+        var pc = _availablePcs.FirstOrDefault(p => p.Id.ToString() == _selectedCharacterId);
+        if (pc is null) return;
+        var result = DiceRoller.RollD20(pc.Abilities.DexMod + pc.InitiativeBonus, label: "Initiative");
+        _pcInitiative = result.Total;
+    }
+
+    private async Task AddPcCombatant()
+    {
+        if (_encounter is null || string.IsNullOrEmpty(_selectedCharacterId) || !Guid.TryParse(_selectedCharacterId, out var characterId)) return;
+        var pc = _availablePcs.FirstOrDefault(p => p.Id == characterId);
+        if (pc is null) return;
+
+        await CombatantRepository.AddAsync(new Combatant
+        {
+            EncounterId = _encounter.Id,
+            CharacterId = pc.Id,
+            Name = pc.Name,
+            InitiativeRoll = _pcInitiative,
+            OrderIndex = _combatants.Count,
+            MaxHp = pc.MaxHp,
+            CurrentHp = pc.CurrentHp,
+            ArmorClass = pc.ArmorClass
+        });
+        await CombatantRepository.SaveChangesAsync();
+
+        _selectedCharacterId = "";
+        _pcInitiative = 0;
+        await LoadAsync();
+    }
+
+    private async Task AddNpcCombatant()
+    {
+        if (_encounter is null || string.IsNullOrWhiteSpace(_npc.Name)) return;
+
+        await CombatantRepository.AddAsync(new Combatant
+        {
+            EncounterId = _encounter.Id,
+            Name = _npc.Name.Trim(),
+            InitiativeRoll = _npc.InitiativeRoll,
+            OrderIndex = _combatants.Count,
+            MaxHp = _npc.MaxHp,
+            CurrentHp = _npc.MaxHp,
+            ArmorClass = _npc.ArmorClass
+        });
+        await CombatantRepository.SaveChangesAsync();
+
+        _npc = new NpcForm();
+        await LoadAsync();
+    }
+
+    private async Task RemoveCombatant(Combatant c)
+    {
+        CombatantRepository.Remove(c);
+        await CombatantRepository.SaveChangesAsync();
+        await LoadAsync();
+    }
+
+    private async Task SetCombatantHp(Combatant c, ChangeEventArgs e)
+    {
+        if (!int.TryParse(e.Value?.ToString(), out var value)) return;
+        c.CurrentHp = Math.Clamp(value, 0, Math.Max(c.MaxHp, 0));
+        await CombatantRepository.SaveChangesAsync();
+    }
+
+    private async Task SetConditions(Combatant c, ChangeEventArgs e)
+    {
+        c.ConditionsCsv = e.Value?.ToString();
+        await CombatantRepository.SaveChangesAsync();
+    }
+
+    private async Task ToggleDefeated(Combatant c)
+    {
+        c.IsDefeated = !c.IsDefeated;
+        await CombatantRepository.SaveChangesAsync();
+    }
+
+    private async Task MoveCombatant(Combatant c, int direction)
+    {
+        var ordered = _combatants.OrderBy(x => x.OrderIndex).ToList();
+        var index = ordered.IndexOf(c);
+        var swapWith = index + direction;
+        if (swapWith < 0 || swapWith >= ordered.Count) return;
+
+        (ordered[index].OrderIndex, ordered[swapWith].OrderIndex) = (ordered[swapWith].OrderIndex, ordered[index].OrderIndex);
+        await CombatantRepository.SaveChangesAsync();
+        await LoadAsync();
+    }
+
+    private async Task SortByInitiative()
+    {
+        var sorted = _combatants.OrderByDescending(c => c.InitiativeRoll).ToList();
+        for (var i = 0; i < sorted.Count; i++)
+            sorted[i].OrderIndex = i;
+        await CombatantRepository.SaveChangesAsync();
+        await LoadAsync();
+    }
+
+    private async Task StartEncounter()
+    {
+        if (_encounter is null || _combatants.Count == 0) return;
+        await SortByInitiative();
+
+        _encounter.Status = EncounterStatus.Active;
+        _encounter.CurrentRound = 1;
+        _encounter.CurrentTurnIndex = 0;
+        await EncounterRepository.SaveChangesAsync();
+    }
+
+    private async Task NextTurn()
+    {
+        if (_encounter is null || _combatants.Count == 0) return;
+        var defeatedInOrder = _combatants.OrderBy(c => c.OrderIndex).Select(c => c.IsDefeated).ToList();
+        var (nextIndex, nextRound) = TurnOrderCalculator.Advance(defeatedInOrder, _encounter.CurrentTurnIndex, _encounter.CurrentRound);
+        _encounter.CurrentTurnIndex = nextIndex;
+        _encounter.CurrentRound = nextRound;
+        await EncounterRepository.SaveChangesAsync();
+    }
+
+    private async Task EndEncounter()
+    {
+        if (_encounter is null) return;
+        _encounter.Status = EncounterStatus.Completed;
+        await EncounterRepository.SaveChangesAsync();
+    }
+
+    private async Task LogEntry()
+    {
+        if (_encounter is null || string.IsNullOrWhiteSpace(_logText)) return;
+
+        await ActionEntryRepository.AddAsync(new ActionEntry
+        {
+            SessionLogId = _encounter.SessionLogId,
+            RoundNo = _encounter.Status == EncounterStatus.Active ? _encounter.CurrentRound : null,
+            InitiativeSlot = _encounter.Status == EncounterStatus.Active ? _encounter.CurrentTurnIndex : null,
+            Description = _logText.Trim(),
+            Source = EntrySource.Manual
+        });
+        await ActionEntryRepository.SaveChangesAsync();
+        _logText = "";
+    }
+}

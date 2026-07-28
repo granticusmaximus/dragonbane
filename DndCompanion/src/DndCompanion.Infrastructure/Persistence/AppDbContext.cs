@@ -19,6 +19,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Recording> Recordings => Set<Recording>();
     public DbSet<TranscriptSegment> TranscriptSegments => Set<TranscriptSegment>();
     public DbSet<StructuredNote> StructuredNotes => Set<StructuredNote>();
+    public DbSet<Encounter> Encounters => Set<Encounter>();
+    public DbSet<Combatant> Combatants => Set<Combatant>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -54,6 +56,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<Character>().Property(c => c.ProficientSkills).HasConversion<string>();
         b.Entity<Character>().Property(c => c.ExpertSkills).HasConversion<string>();
         b.Entity<Character>().Property(c => c.ProficientSaves).HasConversion<string>();
+        b.Entity<Encounter>().Property(e => e.Status).HasConversion<string>();
+        b.Entity<Combatant>().HasIndex(c => new { c.EncounterId, c.OrderIndex });
 
         // Match the C# property initializers so existing rows backfill sensibly on migration.
         // EF's migration-default inference doesn't follow HasConversion (confirmed empirically:

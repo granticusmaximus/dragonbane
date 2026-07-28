@@ -5,6 +5,7 @@
 @inject ICharacterRepository CharacterRepository
 @inject IRepository<CampaignCharacter> CampaignCharacterRepository
 @inject IRepository<SessionLog> SessionLogRepository
+@inject IEncounterRepository EncounterRepository
 @inject NavigationManager Nav
 
 <PageTitle>@(_campaign?.Name ?? "Campaign")</PageTitle>
@@ -103,6 +104,55 @@ else
 
     <div class="section-card">
         <div class="section-card__header">
+            <div class="section-card__title">Encounters</div>
+            <button class="btn btn-ghost" @onclick="() => _showEncounterForm = !_showEncounterForm" disabled="@(_campaign.Sessions.Count == 0)">+ New Encounter</button>
+        </div>
+
+        @if (_showEncounterForm)
+        {
+            <div class="form-panel">
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label>Name</label>
+                        <input @bind="_newEncounterName" @bind:event="oninput" placeholder="e.g. Goblin Ambush" />
+                    </div>
+                    <div class="form-field">
+                        <label>Session</label>
+                        <select @bind="_newEncounterSessionId">
+                            @foreach (var session in _campaign.Sessions.OrderByDescending(s => s.SessionDate))
+                            {
+                                <option value="@session.Id">@SessionLabel(session)</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" @onclick="CreateEncounter" disabled="@string.IsNullOrWhiteSpace(_newEncounterName)">Create</button>
+                    <button class="btn btn-ghost" @onclick="() => _showEncounterForm = false">Cancel</button>
+                </div>
+            </div>
+        }
+
+        @if (_encounters.Count == 0)
+        {
+            <div class="empty-state">No encounters yet.</div>
+        }
+        else
+        {
+            <div class="list">
+                @foreach (var encounter in _encounters.OrderByDescending(e => e.CreatedUtc))
+                {
+                    <div class="list-row">
+                        <span class="list-row__name list-row__name--clickable" @onclick="() => GoToEncounter(encounter.Id)">@encounter.Name</span>
+                        <span class="list-row__meta">@encounter.Status</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="section-card">
+        <div class="section-card__header">
             <div class="section-card__title">Sessions</div>
             <button class="btn btn-ghost" @onclick="() => _showSessionForm = !_showSessionForm">+ New Session</button>
         </div>
@@ -173,6 +223,11 @@ else
     private DateTime _newSessionDate = DateTime.Today;
     private string _newSessionNotes = "";
 
+    private List<Encounter> _encounters = [];
+    private bool _showEncounterForm;
+    private string _newEncounterName = "";
+    private Guid _newEncounterSessionId;
+
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
     private async Task LoadAsync()
@@ -183,9 +238,21 @@ else
         var allCharacters = await CharacterRepository.ListAsync();
         var existingIds = _campaign.Characters.Select(cc => cc.CharacterId).ToHashSet();
         _availableCharacters = allCharacters.Where(c => !existingIds.Contains(c.Id)).OrderBy(c => c.Name).ToList();
+
+        var sessionIds = _campaign.Sessions.Select(s => s.Id).ToHashSet();
+        var allEncounters = await EncounterRepository.ListAsync();
+        _encounters = allEncounters.Where(e => sessionIds.Contains(e.SessionLogId)).ToList();
+        if (_newEncounterSessionId == Guid.Empty && _campaign.Sessions.Count > 0)
+            _newEncounterSessionId = _campaign.Sessions.OrderByDescending(s => s.SessionDate).First().Id;
     }
 
     private void GoToCharacter(Guid id) => Nav.NavigateTo($"/characters/{id}");
+    private void GoToEncounter(Guid id) => Nav.NavigateTo($"/campaigns/{Id}/encounters/{id}");
+
+    private static string SessionLabel(SessionLog session) =>
+        string.IsNullOrWhiteSpace(session.Title)
+            ? session.SessionDate.ToString("MMMM d, yyyy")
+            : $"{session.Title} ({session.SessionDate:MMMM d, yyyy})";
 
     private void ToggleEdit() => _editing = !_editing;
 
@@ -219,6 +286,22 @@ else
         if (_campaign is null) return;
         _campaign.Characters.Remove(cc);
         await CampaignRepository.SaveChangesAsync();
+        await LoadAsync();
+    }
+
+    private async Task CreateEncounter()
+    {
+        if (_campaign is null || string.IsNullOrWhiteSpace(_newEncounterName) || _newEncounterSessionId == Guid.Empty) return;
+
+        await EncounterRepository.AddAsync(new Encounter
+        {
+            SessionLogId = _newEncounterSessionId,
+            Name = _newEncounterName.Trim()
+        });
+        await EncounterRepository.SaveChangesAsync();
+
+        _newEncounterName = "";
+        _showEncounterForm = false;
         await LoadAsync();
     }
 

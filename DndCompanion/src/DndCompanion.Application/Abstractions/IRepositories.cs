@@ -21,3 +21,8 @@ public interface ICharacterRepository : IRepository<Character>
 {
     Task<Character?> GetSheetAsync(Guid id, CancellationToken ct = default); // items+spells+actions
 }
+
+public interface IEncounterRepository : IRepository<Encounter>
+{
+    Task<Encounter?> GetWithCombatantsAsync(Guid id, CancellationToken ct = default);
+}

@@ -24,6 +24,7 @@ public static class DependencyInjection
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<ICampaignRepository, EfCampaignRepository>();
         services.AddScoped<ICharacterRepository, EfCharacterRepository>();
+        services.AddScoped<IEncounterRepository, EfEncounterRepository>();
         services.AddScoped<SrdImporter>();
         // Both wrap a single native resource (audio device / loaded GGML model) meant to
         // live for the app's lifetime, not per-request.

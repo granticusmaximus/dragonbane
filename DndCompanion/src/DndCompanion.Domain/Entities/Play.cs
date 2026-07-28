@@ -11,6 +11,7 @@ public class SessionLog
 
     public List<ActionEntry> Entries { get; set; } = [];
     public List<Recording> Recordings { get; set; } = [];
+    public List<Encounter> Encounters { get; set; } = [];
 }
 
 /// <summary>One logged thing that happened — powers "previous actions" and the timeline.</summary>
