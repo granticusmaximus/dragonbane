@@ -464,6 +464,8 @@ button { cursor: pointer; }
 .combatant-row__main { display: flex; align-items: center; gap: var(--space-2); flex: 1 1 240px; min-width: 0; }
 .combatant-row__conditions { flex: 1 1 200px; }
 .badge--defeated { background: var(--bg-surface-raised); color: var(--text-tertiary); }
+
+.dice-set-folder__title { font-weight: 600; color: var(--text-primary); margin-right: var(--space-2); }
 .form-field--span-2 { grid-column: span 2; }
 .form-actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); }
 

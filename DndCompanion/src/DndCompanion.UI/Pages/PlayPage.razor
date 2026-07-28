@@ -8,6 +8,8 @@
 @inject ICharacterRepository CharacterRepository
 @inject IDiceRoller DiceRoller
 @inject IRepository<ActionEntry> ActionEntryRepository
+@inject IRepository<DiceSetFolder> DiceSetFolderRepository
+@inject IRepository<DiceSet> DiceSetRepository
 @inject NavigationManager Nav
 
 <PageTitle>Play — @(_character?.Name ?? "Character")</PageTitle>
@@ -81,6 +83,80 @@ else
                     </div>
                 </div>
             }
+
+            <div class="section-card">
+                <div class="section-card__header">
+                    <div class="section-card__title">Dice Sets</div>
+                    <button class="btn btn-ghost" @onclick="() => _showNewFolderForm = !_showNewFolderForm">+ New Folder</button>
+                </div>
+
+                @if (_showNewFolderForm)
+                {
+                    <div class="form-panel">
+                        <div class="form-grid">
+                            <div class="form-field"><label>Folder Name</label><input @bind="_newFolderName" @bind:event="oninput" placeholder="e.g. Sneak Attack" /></div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" @onclick="CreateFolder" disabled="@string.IsNullOrWhiteSpace(_newFolderName)">Create</button>
+                            <button class="btn btn-ghost" @onclick="() => _showNewFolderForm = false">Cancel</button>
+                        </div>
+                    </div>
+                }
+
+                @if (_diceSetFolders.Count == 0)
+                {
+                    <div class="empty-state">No dice sets yet. Create a folder to get started.</div>
+                }
+                else
+                {
+                    @foreach (var folder in _diceSetFolders)
+                    {
+                        <div class="toolbar">
+                            <span class="dice-set-folder__title">@folder.Name</span>
+                            <button class="btn btn-ghost" @onclick="() => RollAllInFolder(folder)" disabled="@(SetsIn(folder.Id).Count == 0 || string.IsNullOrEmpty(_selectedSessionId))">Roll All</button>
+                            <button class="btn btn-ghost" @onclick="() => ToggleNewSetForm(folder.Id)">+ Set</button>
+                            <button class="remove-btn" @onclick="() => DeleteFolder(folder)">Remove Folder</button>
+                        </div>
+
+                        @if (_newSetFolderId == folder.Id)
+                        {
+                            <div class="form-panel">
+                                <div class="form-grid">
+                                    <div class="form-field"><label>Name</label><input @bind="_newSetName" @bind:event="oninput" placeholder="e.g. Fire Bolt" /></div>
+                                    <div class="form-field"><label>Expression</label><input @bind="_newSetExpression" @bind:event="oninput" placeholder="e.g. 2d10" /></div>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(_newSetExpression) && !IsValidNewSetExpression)
+                                {
+                                    <p class="list-row__meta">Not a valid dice expression (e.g. "1d8+3").</p>
+                                }
+                                <div class="form-actions">
+                                    <button class="btn btn-primary" @onclick="() => CreateSet(folder.Id)" disabled="@(string.IsNullOrWhiteSpace(_newSetName) || !IsValidNewSetExpression)">Add</button>
+                                    <button class="btn btn-ghost" @onclick="() => _newSetFolderId = null">Cancel</button>
+                                </div>
+                            </div>
+                        }
+
+                        @if (SetsIn(folder.Id).Count == 0)
+                        {
+                            <div class="empty-state">No sets in this folder.</div>
+                        }
+                        else
+                        {
+                            <div class="list">
+                                @foreach (var set in SetsIn(folder.Id))
+                                {
+                                    <div class="list-row">
+                                        <button class="btn" @onclick="() => RollSet(set)">Roll</button>
+                                        <span class="list-row__name">@set.Name</span>
+                                        <span class="list-row__meta">@set.Expression</span>
+                                        <button class="remove-btn" @onclick="() => DeleteSet(set)">Remove</button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                }
+            </div>
 
             @if (_lastResult is not null)
             {
@@ -204,6 +280,14 @@ else
     private DiceResult? _lastResult;
     private string _manualEntryText = "";
 
+    private List<DiceSetFolder> _diceSetFolders = [];
+    private List<DiceSet> _allDiceSets = [];
+    private bool _showNewFolderForm;
+    private string _newFolderName = "";
+    private Guid? _newSetFolderId;
+    private string _newSetName = "";
+    private string _newSetExpression = "";
+
     protected override async Task OnInitializedAsync()
     {
         _character = await CharacterRepository.GetSheetAsync(Id);
@@ -224,6 +308,116 @@ else
         if (_sessions.Count > 0)
             _selectedSessionId = _sessions[0].Id.ToString();
 
+        await LoadEntriesAsync();
+        await LoadDiceSetsAsync();
+    }
+
+    private async Task LoadDiceSetsAsync()
+    {
+        if (_character is null) return;
+        var allFolders = await DiceSetFolderRepository.ListAsync();
+        _diceSetFolders = allFolders.Where(f => f.CharacterId == _character.Id).OrderBy(f => f.SortOrder).ToList();
+
+        var folderIds = _diceSetFolders.Select(f => f.Id).ToHashSet();
+        var allSets = await DiceSetRepository.ListAsync();
+        _allDiceSets = allSets.Where(s => folderIds.Contains(s.FolderId)).ToList();
+    }
+
+    private List<DiceSet> SetsIn(Guid folderId) =>
+        _allDiceSets.Where(s => s.FolderId == folderId).OrderBy(s => s.SortOrder).ToList();
+
+    private bool IsValidNewSetExpression => DiceExpression.TryParse(_newSetExpression, out _);
+
+    private async Task CreateFolder()
+    {
+        if (_character is null || string.IsNullOrWhiteSpace(_newFolderName)) return;
+
+        await DiceSetFolderRepository.AddAsync(new DiceSetFolder
+        {
+            CharacterId = _character.Id,
+            Name = _newFolderName.Trim(),
+            SortOrder = _diceSetFolders.Count
+        });
+        await DiceSetFolderRepository.SaveChangesAsync();
+
+        _newFolderName = "";
+        _showNewFolderForm = false;
+        await LoadDiceSetsAsync();
+    }
+
+    private async Task DeleteFolder(DiceSetFolder folder)
+    {
+        // Delete child sets through their own repo explicitly rather than relying on the DB's
+        // cascade alone, matching this codebase's established "always AddAsync/Remove per
+        // entity" discipline for client-generated-Guid-Id entities.
+        foreach (var set in SetsIn(folder.Id))
+            DiceSetRepository.Remove(set);
+        await DiceSetRepository.SaveChangesAsync();
+
+        DiceSetFolderRepository.Remove(folder);
+        await DiceSetFolderRepository.SaveChangesAsync();
+        await LoadDiceSetsAsync();
+    }
+
+    private void ToggleNewSetForm(Guid folderId)
+    {
+        _newSetFolderId = _newSetFolderId == folderId ? null : folderId;
+        _newSetName = "";
+        _newSetExpression = "";
+    }
+
+    private async Task CreateSet(Guid folderId)
+    {
+        if (string.IsNullOrWhiteSpace(_newSetName) || !IsValidNewSetExpression) return;
+
+        await DiceSetRepository.AddAsync(new DiceSet
+        {
+            FolderId = folderId,
+            Name = _newSetName.Trim(),
+            Expression = _newSetExpression.Trim(),
+            SortOrder = SetsIn(folderId).Count
+        });
+        await DiceSetRepository.SaveChangesAsync();
+
+        _newSetName = "";
+        _newSetExpression = "";
+        _newSetFolderId = null;
+        await LoadDiceSetsAsync();
+    }
+
+    private async Task DeleteSet(DiceSet set)
+    {
+        DiceSetRepository.Remove(set);
+        await DiceSetRepository.SaveChangesAsync();
+        await LoadDiceSetsAsync();
+    }
+
+    private void RollSet(DiceSet set)
+    {
+        if (!DiceExpression.TryParse(set.Expression, out var expr) || expr is null) return;
+        _lastResult = DiceRoller.Roll(expr, set.Name);
+    }
+
+    private async Task RollAllInFolder(DiceSetFolder folder)
+    {
+        if (_character is null || string.IsNullOrEmpty(_selectedSessionId) || !Guid.TryParse(_selectedSessionId, out var sessionId)) return;
+
+        foreach (var set in SetsIn(folder.Id))
+        {
+            if (!DiceExpression.TryParse(set.Expression, out var expr) || expr is null) continue;
+            var result = DiceRoller.Roll(expr, set.Name);
+            _lastResult = result;
+            await ActionEntryRepository.AddAsync(new ActionEntry
+            {
+                SessionLogId = sessionId,
+                CharacterId = _character.Id,
+                Description = result.Label,
+                DiceResultJson = JsonSerializer.Serialize(result),
+                Source = EntrySource.Dice,
+                CreatedUtc = DateTime.UtcNow
+            });
+        }
+        await ActionEntryRepository.SaveChangesAsync();
         await LoadEntriesAsync();
     }
 
