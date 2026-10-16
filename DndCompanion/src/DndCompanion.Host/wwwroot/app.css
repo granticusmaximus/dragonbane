@@ -479,6 +479,46 @@ button { cursor: pointer; }
     padding: var(--space-4);
     margin-bottom: var(--space-4);
 }
+.turn-action-card {
+    background: linear-gradient(180deg, rgba(124, 140, 248, 0.10), rgba(18, 21, 28, 1));
+    border-color: rgba(124, 140, 248, 0.4);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.turn-action__current {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: rgba(124, 140, 248, 0.08);
+    border: 1px solid rgba(124, 140, 248, 0.2);
+}
+.turn-action__name {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.turn-action__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+.turn-action__conditions {
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: var(--radius-sm);
+    padding: var(--space-2) var(--space-3);
+}
+.turn-action__quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
 .section-card__header {
     display: flex;
     align-items: center;

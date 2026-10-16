@@ -52,6 +52,58 @@ else
     </div>
 
     <!-- ===================== Combatants ===================== -->
+    <div class="section-card turn-action-card">
+        <div class="section-card__header">
+            <div class="section-card__title">Turn Action</div>
+        </div>
+
+        @if (_currentCombatant is null)
+        {
+            <div class="empty-state">No active turn yet — start the encounter to begin tracking actions.</div>
+        }
+        else
+        {
+            <div class="turn-action__current">
+                <div class="turn-action__name">@_currentCombatant.Name</div>
+                <div class="turn-action__stats">
+                    <span>Init @_currentCombatant.InitiativeRoll</span>
+                    <span>HP @_currentCombatant.CurrentHp / @_currentCombatant.MaxHp</span>
+                    <span>AC @_currentCombatant.ArmorClass</span>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(_currentCombatant.ConditionsCsv))
+                {
+                    <div class="turn-action__conditions">@_currentCombatant.ConditionsCsv</div>
+                }
+            </div>
+
+            <div class="turn-action__quick-actions">
+                @foreach (var preset in _turnActionPresets)
+                {
+                    <button class="filter-chip @( _turnAction == preset ? "active" : "")" @onclick="() => ApplyActionPreset(preset)">@preset</button>
+                }
+            </div>
+
+            <div class="form-field">
+                <label>Action</label>
+                <select @bind="_turnAction">
+                    @foreach (var action in _turnActionPresets)
+                    {
+                        <option value="@action">@action</option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-field">
+                <label>What happened?</label>
+                <textarea rows="3" placeholder="Describe the action, hit, damage, spell, or status change..." @bind="_logText" @bind:event="oninput"></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn btn-primary" @onclick="LogEntry" disabled="@string.IsNullOrWhiteSpace(_logText)">Log action</button>
+            </div>
+        }
+    </div>
+
     <div class="section-card">
         <div class="section-card__header">
             <div class="section-card__title">Combatants</div>
@@ -159,18 +211,6 @@ else
         }
     </div>
 
-    <!-- ===================== Session Log ===================== -->
-    <div class="section-card">
-        <div class="section-card__header">
-            <div class="section-card__title">Log to Session</div>
-        </div>
-        <div class="form-field">
-            <textarea rows="2" placeholder="What happened this turn..." @bind="_logText" @bind:event="oninput"></textarea>
-        </div>
-        <div class="form-actions">
-            <button class="btn btn-primary" @onclick="LogEntry" disabled="@string.IsNullOrWhiteSpace(_logText)">Log Entry</button>
-        </div>
-    </div>
 }
 
 @code {
@@ -194,10 +234,16 @@ else
     private int _pcInitiative;
     private NpcForm _npc = new();
     private string _logText = "";
+    private string _turnAction = "Attack";
+    private readonly string[] _turnActionPresets = ["Attack", "Spell", "Skill", "Move", "Damage", "Heal", "Other"];
 
     private List<MonsterTemplate> _bestiary = [];
     private string _selectedMonsterId = "";
     private int _bestiaryInitiative;
+
+    private Combatant? _currentCombatant => _encounter is null || _encounter.Status != EncounterStatus.Active
+        ? null
+        : _combatants.OrderBy(c => c.OrderIndex).ElementAtOrDefault(_encounter.CurrentTurnIndex);
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -379,16 +425,31 @@ else
         await EncounterRepository.SaveChangesAsync();
     }
 
+    private void ApplyActionPreset(string preset)
+    {
+        _turnAction = preset;
+        if (string.IsNullOrWhiteSpace(_logText))
+        {
+            _logText = preset;
+        }
+        else if (!_logText.StartsWith(preset, StringComparison.OrdinalIgnoreCase))
+        {
+            _logText = $"{preset}: {_logText}";
+        }
+    }
+
     private async Task LogEntry()
     {
         if (_encounter is null || string.IsNullOrWhiteSpace(_logText)) return;
+
+        var description = EncounterTurnLogFormatter.FormatAction(_turnAction, _logText);
 
         await ActionEntryRepository.AddAsync(new ActionEntry
         {
             SessionLogId = _encounter.SessionLogId,
             RoundNo = _encounter.Status == EncounterStatus.Active ? _encounter.CurrentRound : null,
             InitiativeSlot = _encounter.Status == EncounterStatus.Active ? _encounter.CurrentTurnIndex : null,
-            Description = _logText.Trim(),
+            Description = description.Trim(),
             Source = EntrySource.Manual
         });
         await ActionEntryRepository.SaveChangesAsync();
