@@ -19,9 +19,13 @@ builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 // folder and differs between `dotnet run` (bin/Debug/net10.0) and `electronize start`
 // (obj/Host/bin). DB, downloaded Whisper model, and recordings all live here so every
 // launch method sees the same data.
-var appDataDir = Path.Combine(
-    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-    "DndCompanion");
+// DNDCOMPANION_DATA_DIR overrides it (e.g. to smoke-test a build without touching real
+// campaign data) — HOME doesn't work for that on macOS, ApplicationData ignores it.
+var appDataDir = Environment.GetEnvironmentVariable("DNDCOMPANION_DATA_DIR") is { Length: > 0 } overrideDir
+    ? overrideDir
+    : Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "DndCompanion");
 builder.Services.AddInfrastructure(appDataDir);
 
 var app = builder.Build();

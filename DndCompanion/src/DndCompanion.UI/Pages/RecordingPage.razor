@@ -10,6 +10,7 @@
 @inject IRepository<TranscriptSegment> TranscriptSegmentRepository
 @inject IRepository<StructuredNote> StructuredNoteRepository
 @inject INoteStructurer NoteStructurer
+@inject ILocalModelStore ModelStore
 @inject IAppPaths AppPaths
 
 <PageTitle>Record — @(_session?.Title ?? "Session")</PageTitle>
@@ -24,14 +25,50 @@ else
 {
     <div class="main__header">
         <h1 class="main__title">Recording: @(string.IsNullOrWhiteSpace(_session.Title) ? _session.SessionDate.ToString("MMMM d, yyyy") : _session.Title)</h1>
-        <p class="main__subtitle">Local transcription via Whisper.net — audio never leaves this machine.</p>
+        <p class="main__subtitle">Transcription and note drafting run on this machine — audio never leaves it.</p>
     </div>
+
+    @if (_modelStatuses.Any(m => m.State != ModelInstallState.Installed))
+    {
+        <div class="section-card">
+            <div class="section-card__header">
+                <div class="section-card__title">Local AI Models</div>
+                @if (_modelStatuses.Any(m => m.State is ModelInstallState.NotInstalled or ModelInstallState.Failed))
+                {
+                    <button class="btn btn-primary" @onclick="DownloadMissingModels">@(_modelStatuses.Any(m => m.BytesDownloaded > 0 && m.State != ModelInstallState.Installed) ? "Resume" : "Download") (@FormatBytes(_modelStatuses.Where(m => m.State != ModelInstallState.Installed).Sum(m => m.SizeBytes - m.BytesDownloaded)))</button>
+                }
+            </div>
+            <p class="list-row__meta">One-time download. Speech-to-text is required to record; note drafting is optional. You can leave this page while it downloads.</p>
+            @foreach (var model in _modelStatuses)
+            {
+                <div class="model-row">
+                    <div class="model-row__header">
+                        <span class="note-card__subject">@model.DisplayName</span>
+                        <span class="list-row__meta">@ModelStateLabel(model)</span>
+                    </div>
+                    @if (model.State == ModelInstallState.Downloading)
+                    {
+                        <progress class="model-row__progress" max="@model.SizeBytes" value="@model.BytesDownloaded"></progress>
+                    }
+                    @if (model.State == ModelInstallState.Failed)
+                    {
+                        <div class="model-row__error">@model.Error</div>
+                    }
+                </div>
+            }
+            <p class="list-row__meta">Note drafting is Built with Llama (Llama 3.2, Meta Llama 3.2 Community License).</p>
+        </div>
+    }
 
     <div class="section-card">
         <div class="toolbar">
             @if (!_isRecording)
             {
-                <button class="btn btn-primary" @onclick="StartRecording">&#9679; Start Recording</button>
+                <button class="btn btn-primary" @onclick="StartRecording" disabled="@(!IsInstalled(LocalModel.Transcription))">&#9679; Start Recording</button>
+                @if (!IsInstalled(LocalModel.Transcription))
+                {
+                    <span class="list-row__meta">Download the speech-to-text model to start recording.</span>
+                }
             }
             else
             {
@@ -48,11 +85,13 @@ else
     <div class="section-card">
         <div class="section-card__header">
             <div class="section-card__title">Session Notes</div>
-            <button class="btn btn-ghost" @onclick="StructureNotesAsync" disabled="@(_structuring || _noteWindowBuffer.Count == 0)">
+            <button class="btn btn-ghost" @onclick="StructureNotesAsync" disabled="@(_structuring || _noteWindowBuffer.Count == 0 || !IsInstalled(LocalModel.NoteDrafting))">
                 @(_structuring ? "Drafting…" : "Structure notes now")
             </button>
         </div>
-        <p class="list-row__meta">AI-drafted from the transcript via a local Ollama model — always a draft; edit or discard before confirming.</p>
+        <p class="list-row__meta">@(IsInstalled(LocalModel.NoteDrafting)
+            ? "AI-drafted from the transcript by a local Llama 3.2 model — always a draft; edit or discard before confirming."
+            : "Download the note-drafting model above to have notes drafted from the transcript automatically.")</p>
         @if (_draftNotes.Count == 0)
         {
             <div class="empty-state">No notes yet — drafted automatically every ~60s of speech, or click "Structure notes now".</div>
@@ -125,12 +164,46 @@ else
     private readonly List<TranscriptSegment> _liveSegments = [];
     private readonly List<TranscriptSegment> _noteWindowBuffer = [];
     private readonly List<StructuredNote> _draftNotes = [];
+    private IReadOnlyList<LocalModelStatus> _modelStatuses = [];
 
     protected override async Task OnInitializedAsync()
     {
         _session = await SessionLogRepository.GetAsync(SessionId);
+        _modelStatuses = ModelStore.GetAll();
+        ModelStore.StatusChanged += OnModelStatusChanged;
         Recorder.SamplesCaptured += OnSamplesCaptured;
     }
+
+    // Raised from the store's download thread -- marshal back onto this circuit.
+    private void OnModelStatusChanged() => _ = InvokeAsync(() =>
+    {
+        _modelStatuses = ModelStore.GetAll();
+        StateHasChanged();
+    });
+
+    private void DownloadMissingModels()
+    {
+        // Fire-and-forget on purpose: the store owns the download, so it keeps going if the
+        // user navigates away; this page just observes StatusChanged.
+        foreach (var model in _modelStatuses.Where(m => m.State is ModelInstallState.NotInstalled or ModelInstallState.Failed))
+            _ = ModelStore.DownloadAsync(model.Model);
+        _modelStatuses = ModelStore.GetAll();
+    }
+
+    private bool IsInstalled(LocalModel model) => _modelStatuses.Any(m => m.Model == model && m.State == ModelInstallState.Installed);
+
+    private static string ModelStateLabel(LocalModelStatus m) => m.State switch
+    {
+        ModelInstallState.Installed => "Installed",
+        ModelInstallState.Downloading => $"{FormatBytes(m.BytesDownloaded)} of {FormatBytes(m.SizeBytes)}",
+        ModelInstallState.Failed => "Download failed",
+        _ when m.BytesDownloaded > 0 => $"Paused at {FormatBytes(m.BytesDownloaded)} of {FormatBytes(m.SizeBytes)}",
+        _ => FormatBytes(m.SizeBytes)
+    };
+
+    private static string FormatBytes(long bytes) => bytes >= 1_000_000_000
+        ? $"{bytes / 1_000_000_000d:0.0} GB"
+        : $"{bytes / 1_000_000d:0} MB";
 
     // Fires on PortAudio's native callback thread -- InvokeAsync marshals back to this
     // component's circuit before touching any Blazor state.
@@ -150,7 +223,7 @@ else
 
     private async Task StartRecording()
     {
-        if (_session is null) return;
+        if (_session is null || !IsInstalled(LocalModel.Transcription)) return;
 
         _recording = new Recording { SessionLogId = _session.Id, StartedUtc = DateTime.UtcNow, AudioPath = "" };
         await RecordingRepository.AddAsync(_recording);
@@ -286,6 +359,7 @@ else
     public async ValueTask DisposeAsync()
     {
         Recorder.SamplesCaptured -= OnSamplesCaptured;
+        ModelStore.StatusChanged -= OnModelStatusChanged;
         if (_isRecording)
         {
             Recorder.Stop();

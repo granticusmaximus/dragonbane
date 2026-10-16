@@ -10,7 +10,9 @@ AI-assisted audio note-taking from the laptop mic.
 
 ## Stack (do not swap without asking)
 .NET 10 · ASP.NET Core + Blazor · SQLite / EF Core · Electron.NET shell ·
-Clean Architecture. Local AI later via Ollama; local STT via Whisper.net; mic via
+Clean Architecture. Local LLM via **LLamaSharp** (in-process llama.cpp — swapped from
+Ollama, approved by the owner 2026-10-16 so friends can install the desktop app without
+also installing/running Ollama); local STT via Whisper.net; mic via
 **PortAudioSharp2** (swapped from the originally-planned NAudio — confirmed via the
 maintainer's own words that NAudio has no macOS recording support in either the
 stable 2.x line or the 3.0 preview's new Linux/ALSA support; approved by the owner
@@ -24,6 +26,7 @@ src/DndCompanion.Infrastructure  EF Core + SQLite, EfRepository<T>, DiceRoller, 
 src/DndCompanion.UI              Blazor Razor Class Library (host-agnostic) — pages, layout, components
 src/DndCompanion.Host            ASP.NET Core + Electron.NET shell — App/Routes only, no page logic
 tests/DndCompanion.Tests         xUnit
+tools/NoteDraftingEval           console eval for local note drafting (needs the 2 GB model)
 data/{spells,items,actions}.json SRD 5.2 seed content (CC-BY-4.0), parsed from the real SRD text
 ```
 Dependency rule: Domain ← Application ← Infrastructure/UI ← Host. Domain references nothing.
@@ -34,7 +37,7 @@ this regression if extending the UI layer.
 
 ## Current state (Phases 1–9 done; Phase 10 planned, not started)
 - Solution + all six projects wired up; `dotnet build` and `dotnet test` are green
-  (net10.0, EF Core 10.0.10, ElectronNET.API 23.6.2, 64 passing tests).
+  (net10.0, EF Core 10.0.10, ElectronNET.API 23.6.2, 74 passing tests).
 - Blazor `App`/`Routes` live in `DndCompanion.Host/Components` (thin — no page logic).
   `MainLayout` (sidebar nav: Campaigns/Characters/Spells/Items/Actions/Dice Roller) and
   all pages live in `DndCompanion.UI` (`Layout/MainLayout.razor`, `Pages/*.razor`).
@@ -99,9 +102,17 @@ this regression if extending the UI layer.
   away first, and typed text can be silently lost if a button is clicked before blur.
   Found and fixed across all 6 textareas in the app; watch for this on any new one.
 - `electronize start` (from `src/DndCompanion.Host`) runs Kestrel + the Electron
-  window as one command. `electron.manifest.json` sets `"environment": "Development"`
-  (no separate release-build process exists yet — revisit when one does). A `dnd-dev`
-  shell function in `~/.zshrc` runs this from anywhere.
+  window as one command. `electron.manifest.json` has **no** `"environment"` key on
+  purpose: it used to hard-code `Development`, which would have run `DevSeed` in every
+  installed build. Electron's `main.js` spawns the backend with `env: process.env`, so
+  dev runs set `ASPNETCORE_ENVIRONMENT=Development` on the command line instead (the
+  `dnd-dev` shell function in `~/.zshrc` does). Verified a Release publish in Production
+  serves `blazor.web.js` (200) and skips `DevSeed`.
+- `DNDCOMPANION_DATA_DIR` overrides the per-user data dir (DB, models, recordings) — use
+  it for any smoke test of a built app. **Overriding `HOME` does NOT redirect it on
+  macOS** (`SpecialFolder.ApplicationData` ignores it) — learned the hard way when a
+  "scratch" Production run hit the owner's real DB (harmless: migrate + idempotent SRD
+  import only; integrity-checked afterward).
 - Testing gotcha (not a product bug): plain `dotnet run` without
   `ASPNETCORE_ENVIRONMENT=Development` boots in Production, where ASP.NET Core
   won't serve RCL/framework static web assets (`_framework/blazor.web.js`) from the
@@ -136,8 +147,8 @@ this regression if extending the UI layer.
 - **Audio transcript** (`/sessions/{id}/record`, linked from each session on the
   campaign detail page): `PortAudioRecorder` (`Infrastructure/Audio/`) captures mono
   16 kHz mic audio; `WhisperTranscriptionService` runs it through Whisper.net
-  (`ggml-base.bin`, downloaded on first use via `WhisperGgmlDownloader` to
-  `{BaseDirectory}/models/` — ~148 MB, never committed to the repo). Recording page
+  (`ggml-base.bin`, ~148 MB, never committed to the repo — owned by `ILocalModelStore`,
+  see "Local AI models" below). Recording page
   buffers ~10s chunks, transcribes each independently (no cross-chunk context — simpler,
   costs some accuracy on sentences split across a chunk boundary), persists every
   segment to `TranscriptSegment` live, and on Stop writes the full session audio to a
@@ -262,24 +273,41 @@ this regression if extending the UI layer.
   correctly through a page reload) — then reset the arbitrary values the smoke test wrote onto
   the real Baloney Slim character back to clean defaults afterward, same hygiene discipline as
   every prior phase's verification data.
-- **Audio structuring** (Phase 5, on the same Recording page): `OllamaNoteStructurer`
-  (`Infrastructure/Notes/`) implements `INoteStructurer` against a local, already-running
-  `ollama serve` (default `http://localhost:11434`, model `llama3.2` — chosen by the owner
-  over larger/slower local models for this use case, since it runs repeatedly during a live
-  session). Uses Ollama's structured-output `format` (JSON Schema) to force a
-  `{"notes":[{kind, subject, text, tStart}]}` shape; response parsing is isolated in the
-  pure, unit-tested `NoteDraftJsonParser` (Application layer) so the HTTP plumbing in
-  Infrastructure stays thin. `RecordingPage` accumulates transcript segments into a rolling
+- **Audio structuring** (Phase 5, on the same Recording page): `LlamaNoteStructurer`
+  (`Infrastructure/Notes/`) implements `INoteStructurer` by running Llama 3.2 3B Instruct
+  Q4_K_M (the model the owner originally chose via Ollama's `llama3.2`) in-process with
+  LLamaSharp 0.27.0 + `LLamaSharp.Backend.Cpu` (that one package includes the
+  osx-arm64 Metal libs — there is no separate Metal backend package). Replaced
+  `OllamaNoteStructurer` (deleted). A GBNF grammar forces the
+  `{"notes":[{kind, subject, text, tStart}]}` shape (replacing Ollama's JSON-schema
+  `format`); parsing stays in the pure, unit-tested `NoteDraftJsonParser`. Greedy decoding
+  (temperature 0) — any randomness made a 3B model's output vary run to run. **The prompt
+  matters a lot here**: the Ollama-era prompt scored 1–2/6 on a fixed excerpt set under
+  the grammar and fabricated events ("the party found 100 gold pieces" from a rules
+  question); the current prompt (explicit empty-list few-shot example) scored 5/6 with no
+  fabrications on two different Q4_K_M builds. Known miss: can drop one event from an
+  excerpt mixing table talk and play. Re-run `tools/NoteDraftingEval` (needs the .gguf
+  path; baseline 5/6, 0 fabrications) before changing the prompt, grammar, sampling or model. Weights (~2 GB RAM) load on first request and unload after 5 min idle;
+  one inference at a time. Whisper.net and LLamaSharp both ship ggml native libs but
+  Whisper's are `-whisper`-suffixed, so they coexist in one process (verified, Metal on
+  both). llama.cpp logs are routed to `ILogger` at Warning+ only. `RecordingPage` accumulates transcript segments into a rolling
   window and structures every ~60s of audio (6 chunks) or on a manual "Structure notes
   now" click, plus a final flush on Stop. Every draft is persisted immediately as a
   `StructuredNote` row with `Confirmed = false` (never lost if the app closes mid-session);
   the UI shows each draft with an editable text box and Confirm/Discard buttons — nothing
-  is ever auto-committed. If Ollama is unreachable or returns something unparseable,
-  `StructureAsync` degrades to an empty list rather than throwing — structuring is
-  assistive, never required for recording/transcription to keep working. **Verified against
-  the real local Ollama server** (not mocked): confirmed the model correctly categorizes
-  Action/Loot/Location notes with right timestamps AND correctly omits a filler/small-talk
-  line rather than fabricating a note for it.
+  is ever auto-committed. If the model isn't installed, fails to load, or returns something
+  unparseable, `StructureAsync` degrades to an empty list rather than throwing —
+  structuring is assistive, never required for recording/transcription to keep working.
+- **Local AI models**: `ILocalModelStore` (Application) / `LocalModelStore`
+  (Infrastructure, singleton) owns both model files under `{DataDirectory}/models/`.
+  Hugging Face URLs pinned to a commit + expected size + SHA-256 (from HF's
+  `x-linked-etag`); "installed" = file exists at expected size (hash checked once, at
+  download). Downloads stream to `*.partial`, resume via HTTP Range (restart if the server
+  answers 200), and are owned by the singleton so they survive navigation. The Recording
+  page shows a download card until both are installed; Start Recording needs Whisper, note
+  drafting needs Llama. Unit-tested with a fake `HttpMessageHandler`; also verified with
+  real downloads of both files (including a resumed one). Models are fetched on first use,
+  not bundled — an installer with them would be ~2.3 GB.
 - **Fixed data-location bug**: DB/model/recordings previously keyed off
   `AppContext.BaseDirectory`, the build output folder — which differs between
   `dotnet run` (`bin/Debug/net10.0`) and `electronize start` (`obj/Host/bin`). Real
@@ -297,7 +325,7 @@ this regression if extending the UI layer.
 2. ~~Campaigns & characters: CRUD, character sheet, homebrew entry path~~ ← done
 3. ~~Play view + dice: actions/equipment/spells + roller + ActionEntry log~~ ← done
 4. ~~Audio transcript: PortAudioSharp2 → Whisper.net → live transcript~~ ← done
-5. ~~Audio structuring: Ollama drafts notes; user confirms~~ ← done
+5. ~~Audio structuring: local LLM drafts notes; user confirms~~ ← done (Ollama → LLamaSharp in-process)
 6. ~~Combat fundamentals: HP/AC/Speed/Initiative/skills/saves/spell slots on Character~~ ← done
 7. ~~Initiative Tracker / Encounter Running (Encounter + Combatant, freeform NPCs, wires up
    the long-dead `ActionEntry.RoundNo`/`InitiativeSlot`)~~ ← done

@@ -563,7 +563,36 @@ button { cursor: pointer; }
 }
 
 /* ============================================================
-   AI-drafted session notes (Ollama structuring)
+   Local AI model downloads (Recording page)
+   ============================================================ */
+.model-row {
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.model-row:last-of-type { border-bottom: none; }
+.model-row__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+.model-row__progress {
+    width: 100%;
+    height: 6px;
+    margin-top: var(--space-2);
+    appearance: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--bg-inset);
+    overflow: hidden;
+}
+.model-row__progress::-webkit-progress-bar { background: var(--bg-inset); }
+.model-row__progress::-webkit-progress-value { background: var(--accent); }
+.model-row__progress::-moz-progress-bar { background: var(--accent); }
+.model-row__error { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--danger); }
+
+/* ============================================================
+   AI-drafted session notes (local Llama structuring)
    ============================================================ */
 .note-card {
     background: var(--bg-inset);

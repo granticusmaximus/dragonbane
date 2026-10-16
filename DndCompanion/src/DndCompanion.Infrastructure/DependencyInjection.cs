@@ -1,6 +1,7 @@
 using DndCompanion.Application.Abstractions;
 using DndCompanion.Infrastructure.Audio;
 using DndCompanion.Infrastructure.Dice;
+using DndCompanion.Infrastructure.Models;
 using DndCompanion.Infrastructure.Notes;
 using DndCompanion.Infrastructure.Persistence;
 using DndCompanion.Infrastructure.Srd;
@@ -16,7 +17,6 @@ public static class DependencyInjection
     {
         var appPaths = new AppPaths(dataDirectory);
         var sqlitePath = Path.Combine(appPaths.DataDirectory, "dndcompanion.db");
-        var whisperModelPath = Path.Combine(appPaths.DataDirectory, "models", "ggml-base.bin");
 
         services.AddSingleton<IAppPaths>(appPaths);
         services.AddDbContext<AppDbContext>(o => o.UseSqlite($"Data Source={sqlitePath}"));
@@ -26,12 +26,12 @@ public static class DependencyInjection
         services.AddScoped<ICharacterRepository, EfCharacterRepository>();
         services.AddScoped<IEncounterRepository, EfEncounterRepository>();
         services.AddScoped<SrdImporter>();
-        // Both wrap a single native resource (audio device / loaded GGML model) meant to
-        // live for the app's lifetime, not per-request.
+        // Singletons: each wraps a native resource (audio device / loaded GGML model) or a
+        // long-running model download that must outlive any one Blazor circuit.
+        services.AddSingleton<ILocalModelStore, LocalModelStore>(sp => new LocalModelStore(sp.GetRequiredService<IAppPaths>()));
         services.AddSingleton<IAudioRecorder, PortAudioRecorder>();
-        services.AddSingleton<ITranscriptionService>(_ => new WhisperTranscriptionService(whisperModelPath));
-        // Assumes a local `ollama serve` already running with the model pulled — see README.
-        services.AddSingleton<INoteStructurer>(_ => new OllamaNoteStructurer());
+        services.AddSingleton<ITranscriptionService, WhisperTranscriptionService>();
+        services.AddSingleton<INoteStructurer, LlamaNoteStructurer>();
         return services;
     }
 }

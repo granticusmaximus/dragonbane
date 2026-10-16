@@ -8,7 +8,9 @@
     <ProjectReference Include="..\DndCompanion.Application\DndCompanion.Application.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Phase 4/5: Whisper.net, NAudio, OllamaSharp -->
+    <!-- Audio + local AI: PortAudioSharp2 (mic), Whisper.net (STT), LLamaSharp (note drafting) -->
+    <PackageReference Include="LLamaSharp" Version="0.27.0" />
+    <PackageReference Include="LLamaSharp.Backend.Cpu" Version="0.27.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

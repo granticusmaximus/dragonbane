@@ -3,14 +3,13 @@
   "splashscreen": {
     "imageFile": ""
   },
-  "name": "DndCompanion.Host",
-  "author": "",
-  "singleInstance": false,
-  "environment": "Development",
+  "name": "dnd-companion",
+  "author": "Grant Watson",
+  "singleInstance": true,
   "build": {
-    "appId": "com.DndCompanion.Host.app",
-    "productName": "DndCompanion.Host",
-    "copyright": "Copyright © 2020",
+    "appId": "com.grantwatson.dndcompanion",
+    "productName": "DnD Companion",
+    "copyright": "Copyright © 2026 Grant Watson",
     "buildVersion": "1.0.0",
     "compression": "maximum",
     "directories": {

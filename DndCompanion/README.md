@@ -6,7 +6,7 @@ spells, dice, action log), and — later — AI-assisted audio note-taking.
 
 Stack: **.NET 10 · ASP.NET Core + Blazor · SQLite/EF Core · Electron.NET**, in
 **Clean Architecture**. Phases 1–9 (reference/shell, campaigns/characters, play view + dice,
-audio transcript, Ollama note structuring, combat fundamentals, initiative tracker, bestiary,
+audio transcript, local AI note structuring, combat fundamentals, initiative tracker, bestiary,
 dice sets) are built and running; a basic VTT is planned next — see
 [CLAUDE.md](CLAUDE.md) for the detailed current state and roadmap.
 
@@ -32,16 +32,22 @@ dotnet test
 ```bash
 dotnet tool install ElectronNET.CLI -g   # once
 cd src/DndCompanion.Host
-electronize start
+ASPNETCORE_ENVIRONMENT=Development electronize start
 ```
 `electronize start` builds the Host, launches Kestrel, and opens the Electron
 window pointed at it — one command, one process tree. First run installs
 `node_modules` under `obj/Host` (a few seconds); subsequent runs are fast.
 
-`electron.manifest.json` sets `"environment": "Development"`, so this always
-runs with dev behavior — including `DevSeed` (see below). There's no separate
-"release" build/packaging step yet this early in the project; when one exists,
-that manifest value is what to flip for a real production package.
+`electron.manifest.json` deliberately has **no** `"environment"` key, so an
+installed build runs in Production (no `DevSeed` test character in your friends'
+databases). Electron passes its own environment through to the .NET process, so
+setting `ASPNETCORE_ENVIRONMENT=Development` on the command line, as above, is how
+you get dev behavior locally. Without it, `electronize start` runs in Production,
+which also works, just without `DevSeed`.
+
+**Testing against throwaway data**: set `DNDCOMPANION_DATA_DIR=/some/scratch/dir`
+to point the DB, models and recordings somewhere other than your real data folder
+(overriding `HOME` does *not* do this on macOS).
 
 **Shortcut**: a `dnd-dev` shell function (added to `~/.zshrc`) does the same
 thing from any directory:
@@ -121,28 +127,52 @@ the machine.
   (confirmed with the maintainer's own words — not on their roadmap even in the 3.0
   preview, which only adds Linux). PortAudioSharp2 bundles real native binaries for
   macOS (x64 + Apple Silicon).
-- **Transcription**: Whisper.net, model downloaded on first use (~148 MB,
-  `ggml-base.bin`) to `{app directory}/models/` — never committed to the repo.
+- **Transcription**: Whisper.net with `ggml-base.bin` (~148 MB). Downloaded from the
+  Recording page on first use (see *Local AI models* below) — never committed to the repo.
 - Recording buffers ~10-second chunks, transcribes each independently, and shows
   results live. On Stop, the full session audio is saved as a real `.wav` file
   under `{app directory}/recordings/`.
 - No voice-activity detection yet — Whisper will produce short spurious phrases
   from ambient noise during silence. Not a bug, just unfiltered.
 
-## Session note drafting (Ollama)
+## Session note drafting (local Llama 3.2)
 The same Recording page drafts structured notes (Turn/Move/Action/Location/Loot/Other)
 from the transcript roughly every 60 seconds of speech, or on demand via "Structure
-notes now". Requires a local Ollama server running with the `llama3.2` model pulled:
-```bash
-ollama pull llama3.2   # once
-ollama serve            # if not already running as a background service
-```
-Every draft is editable and requires an explicit **Confirm** before it's treated as
-real — nothing from the model is auto-committed. If Ollama isn't running, drafting
-silently produces nothing; recording and transcription are unaffected.
+notes now". The model — Llama 3.2 3B Instruct, Q4_K_M, the same one Ollama's
+`llama3.2` serves — runs **inside the app** via LLamaSharp (llama.cpp); there's no
+Ollama install or server to run. On Apple Silicon it uses the GPU (Metal): ~2–4 s for
+the first draft including model load, ~1 s after that. The weights (~2 GB of RAM) are
+released after 5 minutes without a request.
+
+Output is constrained by a GBNF grammar to the JSON shape the parser expects, with
+greedy (temperature 0) decoding so results are repeatable. Every draft is editable and
+requires an explicit **Confirm** — nothing is auto-committed. If the model isn't
+downloaded or fails to load, drafting produces nothing; recording and transcription
+are unaffected.
+
+Quality, honestly: it's a 3B model. On a small fixed set of test excerpts it skips
+small talk, rules questions and scheduling correctly and doesn't invent events, but
+it can miss one event from an excerpt that mixes table talk with play.
+
+## Local AI models
+Neither model ships in the installer (that would make it ~2.3 GB). The Recording page
+shows a **Local AI Models** card until both are installed:
+
+| Model | Size | Needed for |
+|---|---|---|
+| Whisper base (`ggml-base.bin`) | 148 MB | Recording (required) |
+| Llama 3.2 3B Instruct Q4_K_M (`.gguf`) | 2.0 GB | Note drafting (optional) |
+
+`LocalModelStore` downloads from Hugging Face URLs pinned to a specific commit,
+verifies each file's SHA-256 before installing it, resumes an interrupted download
+(`*.partial` + HTTP Range), and keeps downloading if you leave the page. An existing
+`ggml-base.bin` from older builds is recognized, not re-downloaded.
+
+Note drafting is Built with Llama — Llama 3.2 is licensed under the
+[Llama 3.2 Community License](https://www.llama.com/llama3_2/license/).
 
 ## Where your data lives
-The SQLite DB, downloaded Whisper model, and recordings all live in one stable
+The SQLite DB, downloaded AI models, and recordings all live in one stable
 per-user directory — `~/Library/Application Support/DndCompanion/` on macOS —
 **not** next to the built binary. Earlier builds used
 `AppContext.BaseDirectory`, which resolves to a different folder depending on
@@ -166,7 +196,7 @@ dotnet ef database update       -p src/DndCompanion.Infrastructure -s src/DndCom
 2. ~~**Campaigns & characters** — CRUD, character sheet, homebrew entry (Aasimar)~~ done
 3. ~~**Play view + dice** — actions/equipment/spells + dice roller + action log~~ done
 4. ~~**Audio: transcript** — PortAudioSharp2 → Whisper.net → live transcript~~ done
-5. ~~**Audio: structuring** — Ollama drafts notes you confirm~~ done
+5. ~~**Audio: structuring** — a local LLM drafts notes you confirm~~ done (Ollama originally; now LLamaSharp in-process)
 6. ~~**Combat fundamentals** — HP/AC/Speed/Initiative/skills/saves/spell slots~~ done
 7. ~~**Initiative Tracker** — encounter running, PCs + freeform NPCs, round/turn tracking~~ done
 8. ~~**Bestiary** — reusable freeform monster/NPC templates~~ done
